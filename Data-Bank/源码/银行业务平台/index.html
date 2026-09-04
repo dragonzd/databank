@@ -1,0 +1,1821 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataBank · 银行业务平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --bg-deep: #050a14;
+  --bg-root: #080e1c;
+  --bg-sidebar: #0a1020;
+  --bg-surface: #0e1629;
+  --bg-elevated: #111b33;
+  --bg-hover: #162241;
+  --bg-glass: rgba(14,22,41,0.85);
+  --border: #192847;
+  --border-faint: rgba(25,40,71,0.5);
+  --border-glow: #2a1f0f;
+  --accent: #f59e0b;
+  --accent-dim: rgba(245,158,11,0.1);
+  --accent-glow: rgba(245,158,11,0.3);
+  --accent2: #06b6d4;
+  --accent2-dim: rgba(6,182,212,0.1);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.1);
+  --emerald: #34d399;
+  --emerald-dim: rgba(52,211,153,0.1);
+  --rose: #f472b6;
+  --rose-dim: rgba(244,114,182,0.1);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.1);
+  --text: #e8edf5;
+  --text-2: #94a3b8;
+  --text-3: #546580;
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size: 15px; }
+body {
+  font-family: 'Lexend', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== NOISE OVERLAY ===== */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ===== SCANLINE ===== */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.scanline {
+  position: fixed; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(245,158,11,0.08), transparent);
+  z-index: 9998; pointer-events: none;
+  animation: scan 6s linear infinite;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-faint);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  z-index: 20;
+  position: relative;
+  backdrop-filter: blur(12px);
+}
+.sidebar::after {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, var(--accent), transparent 60%, var(--accent2) 100%);
+  opacity: 0.15;
+}
+.sidebar-brand {
+  padding: 1.4rem 1.6rem;
+  border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center; gap: 0.85rem;
+}
+.sidebar-brand .logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 60%, #06b6d4 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 1.05rem;
+  color: #050a14;
+  box-shadow: 0 0 18px rgba(245,158,11,0.25);
+}
+.sidebar-brand .brand-text { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1.1; }
+.sidebar-brand .brand-ver { color: var(--text-3); font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; }
+
+.sidebar-nav { flex:1; padding: 1rem 0.85rem; display: flex; flex-direction: column; gap: 0.15rem; overflow-y: auto; }
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.nav-section {
+  font-size: 0.65rem; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 0.85rem 0.9rem 0.3rem;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 0.88rem; font-weight: 500;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid transparent;
+  position: relative;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text); }
+.nav-item.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(245,158,11,0.15);
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: -0.85rem; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+.nav-item .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; opacity: 0.7; }
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-item .nav-badge {
+  margin-left: auto;
+  font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+  padding: 0.15rem 0.5rem; border-radius: 9px;
+  background: var(--accent-dim); color: var(--accent); font-weight: 600;
+}
+.nav-divider { height: 1px; background: var(--border-faint); margin: 0.4rem 0.9rem; }
+
+.sidebar-footer {
+  padding: 1rem 1.3rem; margin: 0 0.6rem 0.6rem;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-faint);
+}
+.user-chip { display: flex; align-items: center; gap: 0.7rem; }
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #d97706);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.78rem; color: #050a14;
+}
+.user-info .user-name { font-size: 0.85rem; font-weight: 600; }
+.user-info .user-role { font-size: 0.7rem; color: var(--text-3); }
+
+/* ===== TOPBAR ===== */
+.topbar {
+  height: var(--topbar-h);
+  background: rgba(10,16,32,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center;
+  padding: 0 2rem;
+  gap: 1.5rem;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.topbar .page-title {
+  font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em;
+}
+.topbar .breadcrumb { color: var(--text-3); font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; }
+.topbar .breadcrumb span { color: var(--text-2); }
+.topbar-actions {
+  margin-left: auto; display: flex; align-items: center; gap: 1.2rem;
+}
+.live-indicator { display: flex; align-items: center; gap: 0.4rem; }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--emerald);
+  box-shadow: 0 0 10px rgba(52,211,153,0.6);
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+.live-text { font-size: 0.75rem; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+.live-block { color: var(--text); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.btn-primary {
+  background: var(--accent); color: #050a14; border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(245,158,11,0.15);
+}
+.btn-primary:hover { background: #fbbf24; box-shadow: 0 0 28px rgba(245,158,11,0.3); transform: translateY(-1px); }
+.btn-outline {
+  background: transparent; border-color: var(--border); color: var(--text-2);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.btn-ghost {
+  background: transparent; border-color: transparent; color: var(--text-2);
+}
+.btn-ghost:hover { color: var(--text); background: var(--bg-hover); }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.74rem; }
+.btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.25); }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-xs { padding: 0.25rem 0.55rem; font-size: 0.7rem; border-radius: 4px; }
+.btn-accent2 { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(6,182,212,0.25); }
+.btn-accent2:hover { background: rgba(6,182,212,0.2); }
+.btn-amber { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.25); }
+.btn-red { background: var(--red-dim); color: var(--red); border-color: rgba(248,113,113,0.25); }
+.btn-emerald { background: var(--emerald-dim); color: var(--emerald); border-color: rgba(52,211,153,0.25); }
+
+/* ===== LOGIN OVERLAY ===== */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, rgba(5,10,20,0.97) 0%, rgba(8,16,36,0.97) 50%, rgba(5,10,20,0.97) 100%);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(20px);
+}
+.login-overlay.hidden { display: none; }
+.login-box {
+  width: 420px; padding: 2.5rem 2.2rem;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 0 60px rgba(245,158,11,0.08);
+  position: relative; overflow: hidden;
+}
+.login-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.login-logo { text-align: center; margin-bottom: 2rem; }
+.login-logo .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.login-logo h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+.login-logo p { font-size: 0.8rem; color: var(--text-3); }
+.login-form { display: flex; flex-direction: column; gap: 1rem; }
+.login-input {
+  width: 100%; padding: 0.75rem 1rem;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 0.9rem; font-family: inherit;
+  outline: none; transition: border-color 0.2s;
+}
+.login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+.login-input::placeholder { color: var(--text-3); }
+.login-btn {
+  width: 100%; padding: 0.75rem; background: var(--accent);
+  color: #050a14; border: none; border-radius: var(--radius-sm);
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.2s;
+}
+.login-btn:hover { filter: brightness(1.1); }
+.login-tip { text-align: center; font-size: 0.76rem; color: var(--text-3); margin-top: 0.5rem; }
+.login-error { color: #f87171; font-size: 0.8rem; text-align: center; min-height: 1.2em; }
+
+/* ===== SETTINGS HEADER BUTTON ===== */
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 12px var(--accent-dim); }
+
+/* ===== SETTINGS MODAL ===== */
+.settings-overlay {
+  position: fixed; inset: 0; z-index: 9980;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+}
+.settings-overlay.hidden { display: none; }
+.settings-dialog {
+  width: 720px; max-height: 85vh;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.settings-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border-faint); display: flex; align-items: center; justify-content: space-between; }
+.settings-header h3 { font-size: 1.1rem; font-weight: 700; }
+.settings-header .btn-icon { margin-left: auto; }
+.settings-body { display: flex; flex: 1; overflow: hidden; min-height: 400px; }
+.settings-nav { width: 180px; border-right: 1px solid var(--border-faint); padding: 0.8rem 0; background: var(--bg-elevated); display: flex; flex-direction: column; gap: 0.2rem; }
+.settings-nav-item { padding: 0.65rem 1.2rem; font-size: 0.84rem; color: var(--text-3); cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; }
+.settings-nav-item:hover { color: var(--text); background: var(--bg-hover); }
+.settings-nav-item.active { color: var(--accent); background: var(--accent-dim); border-left-color: var(--accent); font-weight: 600; }
+.settings-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+.settings-section { display: none; }
+.settings-section.active { display: block; }
+.settings-field { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 0; border-bottom: 1px solid var(--border-faint); }
+.settings-field:last-child { border-bottom: none; }
+.settings-field-label { color: var(--text-3); font-size: 0.84rem; }
+.settings-field-value { font-size: 0.86rem; color: var(--text); font-weight: 500; }
+.settings-field-right { display: flex; align-items: center; gap: 0.6rem; }
+.settings-danger { margin-top: 1.5rem; padding: 1rem; border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm); background: rgba(239,68,68,0.05); }
+.settings-danger h4 { color: #f87171; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.toggle-switch { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: all 0.25s; }
+.toggle-switch.on { background: var(--emerald); }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: all 0.25s; }
+.toggle-switch.on::after { left: 22px; }
+
+/* ===== CONTENT ===== */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.content {
+  flex:1; overflow-y: auto; overflow-x: hidden;
+  padding: 1.8rem 2rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  scroll-behavior: smooth;
+}
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== PAGES ===== */
+.page { display:none; flex-direction:column; gap:1.5rem; }
+.page.active { display:flex; animation: pageIn 350ms var(--ease) both; }
+@keyframes pageIn {
+  from { opacity:0; transform: translateY(10px); }
+  to { opacity:1; transform: translateY(0); }
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: all 200ms var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+.card:hover { border-color: var(--border-glow); }
+.card-glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-faint);
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.card-title { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
+.card-subtitle { font-size: 0.76rem; color: var(--text-3); }
+
+/* ===== KPI CARDS ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.kpi-grid.col-6 { grid-template-columns: repeat(6, 1fr); }
+.kpi-grid.col-3 { grid-template-columns: repeat(3, 1fr); }
+.kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 200ms var(--ease-out);
+  cursor: default;
+}
+.kpi-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+.kpi-card::before {
+  content: ''; position: absolute; top: -40%; right: -20%;
+  width: 120px; height: 120px; border-radius: 50%;
+  opacity: 0.06; transition: opacity 300ms;
+}
+.kpi-card.accent::before { background: var(--accent); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.emerald::before { background: var(--emerald); }
+.kpi-card.accent2::before { background: var(--accent2); }
+.kpi-card:hover::before { opacity: 0.12; }
+.kpi-label { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.25rem; }
+.kpi-value { font-size: 1.7rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin: 0.25rem 0 0.1rem; letter-spacing: -0.02em; line-height: 1.1; }
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.amber { color: var(--amber); }
+.kpi-value.emerald { color: var(--emerald); }
+.kpi-value.accent2 { color: var(--accent2); }
+.kpi-change { font-size: 0.72rem; color: var(--text-3); margin-top: 0.1rem; }
+.kpi-change.up { color: var(--emerald); }
+.kpi-change.down { color: var(--red); }
+
+/* ===== TABLES ===== */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+}
+table {
+  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+}
+th {
+  background: rgba(17,27,51,0.6);
+  padding: 0.65rem 1rem; text-align: left;
+  font-weight: 600; font-size: 0.72rem; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-faint); white-space: nowrap;
+}
+td {
+  padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-faint);
+  color: var(--text-2); white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(22,34,65,0.4); }
+td.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+td.strong { color: var(--text); font-weight: 500; }
+td.up { color: var(--emerald); }
+td.down { color: var(--red); }
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em;
+}
+.badge-active { background: var(--emerald-dim); color: var(--emerald); }
+.badge-pending { background: var(--amber-dim); color: var(--amber); }
+.badge-published { background: var(--emerald-dim); color: var(--emerald); }
+.badge-draft { background: rgba(84,101,128,0.12); color: var(--text-3); }
+.badge-aaa { background: rgba(52,211,153,0.15); color: var(--emerald); }
+.badge-aa { background: rgba(6,182,212,0.12); color: var(--accent2); }
+.badge-a { background: var(--amber-dim); color: var(--amber); }
+.badge-b { background: rgba(84,101,128,0.15); color: var(--text-3); }
+.badge-online { background: var(--emerald-dim); color: var(--emerald); }
+.badge-offline { background: var(--red-dim); color: var(--red); }
+
+/* ===== CHARTS ===== */
+.chart-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.chart-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; }
+.chart-inner { height: 280px; }
+
+/* ===== GRID LAYOUTS ===== */
+.col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.col-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.col-21 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+.col-12 { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
+.col-121 { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 1rem; }
+
+/* ===== TABS ===== */
+.tabs { display:flex; gap:0.2rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+.tab {
+  padding: 0.45rem 1.1rem; font-size: 0.82rem; font-weight: 600;
+  border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--text-3); border: 1px solid transparent;
+  transition: all 180ms var(--ease-out);
+}
+.tab:hover { color: var(--text-2); background: var(--bg-hover); }
+.tab.active { color: var(--accent); background: var(--accent-dim); border-color: rgba(245,158,11,0.15); }
+
+/* ===== FORMS ===== */
+.form-group { margin-bottom: 1rem; }
+.form-label { display:block; font-size:0.74rem; font-weight:600; color:var(--text-3); margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.05em; }
+.form-input, .form-select {
+  width: 100%; padding: 0.6rem 0.85rem;
+  background: var(--bg-root); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.84rem; transition: border-color 180ms; outline: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.form-input::placeholder { color: var(--text-3); }
+.form-select { cursor: pointer; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; }
+.form-hint { font-size:0.7rem; color:var(--text-3); margin-top:0.3rem; }
+.form-inline { display:flex; align-items:center; gap:0.6rem; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display:none;
+  position:fixed; inset:0;
+  background: rgba(5,10,20,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  align-items:center; justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  width: 540px; max-width: 90vw;
+  max-height: 80vh; overflow-y: auto;
+  animation: modalIn 280ms var(--ease) both;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(16px) scale(0.96); }
+  to { opacity:1; transform: translateY(0) scale(1); }
+}
+.modal h3 { font-size:1.15rem; margin-bottom:1.5rem; font-weight: 700; }
+.modal-actions { display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.8rem; }
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed; top: 1rem; right: 1rem; z-index: 200;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.toast {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius);
+  padding: 0.8rem 1.2rem;
+  font-size: 0.84rem; font-weight: 500;
+  display: flex; align-items: center; gap: 0.6rem;
+  animation: toastIn 300ms var(--ease) both;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  max-width: 380px;
+}
+@keyframes toastIn {
+  from { opacity:0; transform: translateX(40px); }
+  to { opacity:1; transform: translateX(0); }
+}
+.toast.success { border-color: rgba(52,211,153,0.4); }
+.toast.success .toast-icon { color: var(--emerald); }
+.toast.info { border-color: rgba(245,158,11,0.4); }
+.toast.info .toast-icon { color: var(--accent); }
+
+/* ===== TOGGLES ===== */
+.toggle-wrap { display:flex; align-items:center; gap:0.5rem; }
+.toggle {
+  position: relative; width: 44px; height: 24px;
+  border-radius: 12px; background: var(--border);
+  cursor: pointer; transition: background 200ms;
+}
+.toggle.on { background: var(--emerald); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform 200ms var(--ease-out);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* ===== NETWORK GRAPH CONTAINER ===== */
+.network-container {
+  background: var(--bg-root);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  height: 320px;
+  overflow: hidden;
+}
+
+/* ===== VERSION TIMELINE ===== */
+.version-item {
+  display: flex; gap: 1rem; padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-faint);
+}
+.version-item:last-child { border-bottom: none; }
+.version-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+  margin-top: 5px; flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(245,158,11,0.4);
+}
+.version-dot.current { background: var(--emerald); box-shadow: 0 0 8px rgba(52,211,153,0.4); }
+.version-info { flex:1; }
+.version-info .v-id { font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; color: var(--accent); margin-bottom: 0.2rem; }
+.version-info .v-date { font-size: 0.7rem; color: var(--text-3); margin-bottom: 0.15rem; }
+.version-info .v-desc { font-size: 0.78rem; color: var(--text-2); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid.col-6, .kpi-grid.col-3 { grid-template-columns: repeat(2, 1fr); }
+  .col-2, .col-21, .col-12, .col-121 { grid-template-columns: 1fr; }
+  .col-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .kpi-grid, .kpi-grid.col-6, .kpi-grid.col-3 { grid-template-columns: 1fr; }
+  .col-3 { grid-template-columns: 1fr; }
+  .content { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">◈</div>
+      <h2>DataBank 银行业务平台</h2>
+      <p>银行人员身份验证 · 登录即注册</p>
+    </div>
+    <form class="login-form" onsubmit="handleLogin(event)">
+      <input class="login-input" type="text" id="loginId" placeholder="工号 / 邮箱 / 手机号" required autocomplete="username">
+      <input class="login-input" type="password" id="loginPassword" placeholder="登录密码" required autocomplete="current-password">
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" type="submit">登录 / 注册</button>
+      <div class="login-tip">银行内网加密 · 操作全程审计 · 权限分级管理</div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div class="settings-overlay hidden" id="settingsOverlay">
+  <div class="settings-dialog">
+    <div class="settings-header">
+      <h3>⚙ 系统设置</h3>
+      <button class="btn-icon" onclick="closeSettings()" title="关闭">✕</button>
+    </div>
+    <div class="settings-body">
+      <nav class="settings-nav" id="settingsNav">
+        <div class="settings-nav-item active" data-settings="security">账号安全</div>
+        <div class="settings-nav-item" data-settings="tx-password">操作密码</div>
+        <div class="settings-nav-item" data-settings="devices">安全设备</div>
+        <div class="settings-nav-item" data-settings="auth">权限认证</div>
+        <div class="settings-nav-item" data-settings="protocol">协议管理</div>
+        <div class="settings-nav-item" data-settings="help">帮助中心</div>
+        <div class="settings-nav-item" data-settings="about">关于系统</div>
+      </nav>
+      <div class="settings-content">
+        <div class="settings-section active" id="sett-security">
+          <div class="settings-field"><span class="settings-field-label">登录账号</span><span class="settings-field-value" id="sett-account">—</span></div>
+          <div class="settings-field"><span class="settings-field-label">操作员角色</span><span class="settings-field-value">Bank Admin · 系统管理员</span></div>
+          <div class="settings-field"><span class="settings-field-label">登录密码</span><span class="settings-field-right"><span class="settings-field-value">••••••••</span><button class="btn btn-outline btn-sm" onclick="showToast('info','请联系IT安全部门修改密码')">修改</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">双重认证 (2FA)</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">操作审计日志</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">查看日志</button></span></div>
+          <div class="settings-danger"><h4>权限降级</h4><p style="font-size:0.78rem;color:var(--text-3);">降级后需要上级重新授权方可恢复管理员权限。</p><button class="btn btn-danger btn-sm" onclick="showToast('warning','请联系上级管理员执行权限变更')" style="margin-top:0.5rem;">申请降级</button></div>
+        </div>
+        <div class="settings-section" id="sett-tx-password">
+          <div class="settings-field"><span class="settings-field-label">操作密码状态</span><span class="settings-field-value" style="color:var(--emerald);">已设置</span></div>
+          <div class="settings-field"><span class="settings-field-label">修改操作密码</span><span class="settings-field-right"><input class="form-input" type="password" placeholder="输入新密码" style="width:180px;"><button class="btn btn-outline btn-sm">确认</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">敏感操作二次确认</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">产品审批密码保护</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+        </div>
+        <div class="settings-section" id="sett-devices">
+          <div class="settings-field"><span class="settings-field-label">当前设备</span><span class="settings-field-value" style="color:var(--emerald);">Windows 11 Pro · Chrome · 银行内网 ✗ 当前</span></div>
+          <div class="settings-field"><span class="settings-field-label">设备-001</span><span class="settings-field-value">运维终端 · 北京数据中心 · 2026-06-01</span></div>
+          <div class="settings-field"><span class="settings-field-label">新设备绑定验证</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">IP白名单</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">配置</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-auth">
+          <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:1rem;">管理银行内部操作权限与第三方授权</p>
+          <div class="settings-field"><span class="settings-field-label">产品配置权限</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">鉴权方管理权限</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">财务结算权限</span><span class="settings-field-right"><span class="toggle-switch" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">数据交易平台联动</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已授权</span><button class="btn btn-outline btn-sm">管理</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-protocol">
+          <div class="settings-field"><span class="settings-field-label">银行存款协议 v2.1</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">银行理财协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">银行贷款协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">鉴权方准入标准 v0.5</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--amber);">待审批</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">银行操作规范 v3.1</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-help">
+          <p style="font-size:0.84rem;color:var(--text-2);margin-bottom:1rem;">银行业务平台帮助资源</p>
+          <div class="settings-field"><span class="settings-field-label">📖 操作手册</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">在线阅读</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">🎬 培训视频</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">观看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">❓ FAQ</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">💬 IT运维支持</span><span class="settings-field-right"><button class="btn btn-primary btn-sm">联系支持</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-about">
+          <div class="settings-field"><span class="settings-field-label">平台版本</span><span class="settings-field-value mono">银行业务平台 v0.2.0-beta</span></div>
+          <div class="settings-field"><span class="settings-field-label">底层链</span><span class="settings-field-value">Substrate 联盟链 v1.3.0</span></div>
+          <div class="settings-field"><span class="settings-field-label">智能合约</span><span class="settings-field-value">ink! v4.2 · 协议账户合约 v2.1</span></div>
+          <div class="settings-field"><span class="settings-field-label">Token 合约</span><span class="settings-field-value">ERC-20 兼容 · 1 Token = 0.01 CNY</span></div>
+          <div class="settings-field"><span class="settings-field-label">审计系统</span><span class="settings-field-value">全链路审计 v1.0 · 操作不可篡改</span></div>
+          <div class="settings-field"><span class="settings-field-label">安全等级</span><span class="settings-field-value" style="color:var(--emerald);">金融级 · ISO 27001</span></div>
+          <div class="settings-field"><span class="settings-field-label">开发团队</span><span class="settings-field-value">DataBank Engineering © 2026</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scanline"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">DB</div>
+    <div>
+      <div class="brand-text">DataBank</div>
+      <div class="brand-ver">银行业务平台</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">&#9673;</span> 管理驾驶舱
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-section">业务管理</div>
+    <div class="nav-item" data-page="product-config">
+      <span class="nav-icon">&#9635;</span> 产品配置
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item" data-page="protocol-rules">
+      <span class="nav-icon">&#9638;</span> 协议规则
+    </div>
+    <div class="nav-section">数据与模型</div>
+    <div class="nav-item" data-page="data-models">
+      <span class="nav-icon">&#9671;</span> 数据应用模型
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-section">鉴权方</div>
+    <div class="nav-item" data-page="endorser-mgmt">
+      <span class="nav-icon">&#9672;</span> 鉴权方管理
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" data-page="revenue-analysis">
+      <span class="nav-icon">&#9652;</span> 收益分析
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip" onclick="openSettings()" style="cursor:pointer;">
+      <div class="user-avatar">BA</div>
+      <div class="user-info">
+        <div class="user-name">Zhang Wei</div>
+        <div class="user-role">Bank Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+  <header class="topbar">
+    <span class="page-title" id="pageTitle">管理驾驶舱</span>
+    <span class="breadcrumb">/ <span id="breadcrumbPage">管理驾驶舱</span></span>
+    <div class="topbar-actions">
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span class="live-text">区块 <span class="live-block">#847,291</span></span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="showToast('info','系统正常运行中')">系统状态</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== PAGE 1: DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-grid col-6">
+        <div class="kpi-card accent">
+          <div class="kpi-label">用户总数</div>
+          <div class="kpi-value accent" data-count="12480">0</div>
+          <div class="kpi-change up">+5.2% 本月</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">数据总量</div>
+          <div class="kpi-value amber">8.7 TB</div>
+          <div class="kpi-change up">+1.2 TB 本月</div>
+        </div>
+        <div class="kpi-card emerald">
+          <div class="kpi-label">存款总额</div>
+          <div class="kpi-value emerald">2.84M</div>
+          <div class="kpi-change up">+8.4% 本月</div>
+        </div>
+        <div class="kpi-card accent2">
+          <div class="kpi-label">理财总额</div>
+          <div class="kpi-value accent2">520K</div>
+          <div class="kpi-change up">+12.6% 本月</div>
+        </div>
+        <div class="kpi-card accent">
+          <div class="kpi-label">贷款总额</div>
+          <div class="kpi-value accent">345K</div>
+          <div class="kpi-change">质押率 50%</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">模型数量</div>
+          <div class="kpi-value amber">12</div>
+          <div class="kpi-change">本月新增 2</div>
+        </div>
+      </div>
+      <div class="kpi-grid col-3">
+        <div class="kpi-card emerald">
+          <div class="kpi-label">本月收益</div>
+          <div class="kpi-value emerald">186K</div>
+          <div class="kpi-change up">+15.3% 环比</div>
+        </div>
+        <div class="kpi-card accent2">
+          <div class="kpi-label">鉴权方数</div>
+          <div class="kpi-value accent2">8</div>
+          <div class="kpi-change">AAA 级 3 家</div>
+        </div>
+        <div class="kpi-card accent">
+          <div class="kpi-label">平台可用率</div>
+          <div class="kpi-value accent">99.97%</div>
+          <div class="kpi-change">最近 30 天</div>
+        </div>
+      </div>
+
+      <div class="col-21">
+        <div class="chart-box">
+          <div class="chart-head">
+            <span class="card-title">月度收益趋势 (万元)</span>
+            <span class="card-subtitle">近 12 个月</span>
+          </div>
+          <div class="chart-inner" id="chart-revenue"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">最近交易</span><button class="btn btn-ghost btn-xs">全部</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>时间</th><th>类型</th><th>金额</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">14:32:08</td><td class="strong">存款利息 · 活期</td><td class="mono up">+2,450</td></tr>
+                <tr><td class="mono">13:15:41</td><td class="strong">理财分润 · 健康数据</td><td class="mono up">+5,200</td></tr>
+                <tr><td class="mono">11:08:22</td><td class="strong">贷款利息 · 设备数据</td><td class="mono up">+1,860</td></tr>
+                <tr><td class="mono">09:45:10</td><td class="strong">模型收入 · 用户画像</td><td class="mono up">+8,100</td></tr>
+                <tr><td class="mono">08:20:55</td><td class="strong">鉴权分润 · 国家电网</td><td class="mono up">+3,400</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-2">
+        <div class="chart-box">
+          <div class="chart-head"><span class="card-title">用户增长趋势</span></div>
+          <div class="chart-inner" id="chart-user-growth"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-head"><span class="card-title">产品分布</span></div>
+          <div class="chart-inner" id="chart-product-dist"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 2: PRODUCT CONFIG ===== -->
+    <div class="page" id="page-product-config">
+      <div class="tabs" id="product-tabs">
+        <div class="tab active" data-product="deposit">存款产品</div>
+        <div class="tab" data-product="wealth">理财产品</div>
+        <div class="tab" data-product="loan">贷款产品</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">存款产品数</div><div class="kpi-value accent">5</div><div class="kpi-change">已发布 4</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">理财产品数</div><div class="kpi-value emerald">4</div><div class="kpi-change">已发布 3</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">贷款产品数</div><div class="kpi-value amber">3</div><div class="kpi-change">已发布 2</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">产品总数</div><div class="kpi-value accent2">12</div><div class="kpi-change">已发布 9</div></div>
+      </div>
+
+      <!-- Deposit Product Tab -->
+      <div class="card" id="product-form-deposit">
+        <div class="card-header"><span class="card-title">存款产品配置</span><button class="btn btn-primary btn-sm" onclick="showToast('success','存款产品配置已保存')">保存配置</button></div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">产品名称</label>
+            <input class="form-input" value="活期存款" placeholder="产品名称">
+          </div>
+          <div class="form-group">
+            <label class="form-label">年化利率 (%)</label>
+            <input class="form-input" type="number" value="3.2" step="0.1" placeholder="年化利率">
+          </div>
+          <div class="form-group">
+            <label class="form-label">期限</label>
+            <select class="form-select">
+              <option>随时存取</option><option>3 个月</option><option>6 个月</option><option>12 个月</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">授权范围</label>
+            <select class="form-select">
+              <option>查询检索</option><option>下载分析</option><option>全部权限</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">最低存款额</label>
+            <input class="form-input" type="number" value="100" placeholder="最低存款额">
+          </div>
+          <div class="form-group">
+            <label class="form-label">休眠规则</label>
+            <select class="form-select">
+              <option>12个月无使用利率归零</option><option>6个月无使用利率归零</option><option>无休眠规则</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">鉴权方白名单</label>
+            <input class="form-input" placeholder="Apple Health, 国家电网, 小米 IoT" value="Apple Health, 国家电网, 小米 IoT">
+          </div>
+          <div class="form-group">
+            <label class="form-label">分账比例 (银行:用户:鉴权方)</label>
+            <select class="form-select">
+              <option>10:70:20</option><option>15:70:15</option><option>5:80:15</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="product-form-wealth" style="display:none;">
+        <div class="card-header"><span class="card-title">理财产品配置</span><button class="btn btn-primary btn-sm" onclick="showToast('success','理财产品配置已保存')">保存配置</button></div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">理财包名称</label>
+            <input class="form-input" value="专项数据理财包" placeholder="理财包名称">
+          </div>
+          <div class="form-group">
+            <label class="form-label">预期年化 (%)</label>
+            <input class="form-input" type="number" value="12" step="0.1" placeholder="预期年化">
+          </div>
+          <div class="form-group">
+            <label class="form-label">锁定期</label>
+            <select class="form-select">
+              <option>3 个月</option><option>6 个月</option><option>12 个月</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">数据范围</label>
+            <input class="form-input" value="临床试验数据" placeholder="数据范围">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Token/GB 费率</label>
+            <input class="form-input" type="number" value="2000" placeholder="Token/GB">
+          </div>
+          <div class="form-group">
+            <label class="form-label">分账比例 (银行:用户:鉴权方)</label>
+            <select class="form-select">
+              <option>10:70:20</option><option>15:70:15</option><option>5:80:15</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="product-form-loan" style="display:none;">
+        <div class="card-header"><span class="card-title">贷款产品配置</span><button class="btn btn-primary btn-sm" onclick="showToast('success','贷款产品配置已保存')">保存配置</button></div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">贷款类型</label>
+            <select class="form-select">
+              <option>数据质押贷款</option><option>信用贷款</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">年化利率 (%)</label>
+            <input class="form-input" type="number" value="8" step="0.1" placeholder="年化利率">
+          </div>
+          <div class="form-group">
+            <label class="form-label">期限</label>
+            <select class="form-select">
+              <option>3 个月</option><option>6 个月</option><option>12 个月</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">质押率 (%)</label>
+            <input class="form-input" type="number" value="50" placeholder="质押率">
+          </div>
+          <div class="form-group">
+            <label class="form-label">预警线 (%)</label>
+            <input class="form-input" type="number" value="120" placeholder="预警线">
+          </div>
+          <div class="form-group">
+            <label class="form-label">清算线 (%)</label>
+            <input class="form-input" type="number" value="110" placeholder="清算线">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">当前已发布产品列表</span><button class="btn btn-outline btn-sm">筛选</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>产品名称</th><th>类型</th><th>利率</th><th>期限</th><th>授权范围</th><th>质押率/分账</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">活期存款</td><td>存款</td><td class="mono" style="color:var(--accent);">3.2%~6.0%</td><td>随时存取</td><td>查询检索</td><td class="mono">10:70:20</td><td><span class="badge badge-published">已发布</span></td><td><button class="btn btn-red btn-xs" onclick="togglePublish(this)">下架</button></td></tr>
+              <tr><td class="strong">定期存款 12月</td><td>存款</td><td class="mono" style="color:var(--accent);">8.5%</td><td>12 个月</td><td>下载分析</td><td class="mono">10:70:20</td><td><span class="badge badge-published">已发布</span></td><td><button class="btn btn-red btn-xs" onclick="togglePublish(this)">下架</button></td></tr>
+              <tr><td class="strong">靶向药疗效理财</td><td>理财</td><td class="mono" style="color:var(--amber);">12%</td><td>3 个月</td><td>下载分析</td><td class="mono">10:70:20</td><td><span class="badge badge-published">已发布</span></td><td><button class="btn btn-red btn-xs" onclick="togglePublish(this)">下架</button></td></tr>
+              <tr><td class="strong">数据质押贷款</td><td>贷款</td><td class="mono" style="color:var(--accent);">8%</td><td>6 个月</td><td>质押数据</td><td class="mono">50%</td><td><span class="badge badge-published">已发布</span></td><td><button class="btn btn-red btn-xs" onclick="togglePublish(this)">下架</button></td></tr>
+              <tr><td class="strong">零存整取</td><td>存款</td><td class="mono" style="color:var(--amber);">8.5%~10.0%</td><td>12 个月</td><td>下载分析</td><td class="mono">10:70:20</td><td><span class="badge badge-draft">草稿</span></td><td><button class="btn btn-emerald btn-xs" onclick="togglePublish(this)">发布</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">⌂ 运动数据专项配置</span><button class="btn btn-primary btn-sm" onclick="showToast('success','运动数据专项配置已保存')">保存配置</button></div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="form-group">
+            <label class="form-label">数据维度打包策略</label>
+            <select class="form-select">
+              <option selected>多维度组合存款 — 利率上浮最高20%</option>
+              <option>单维度分离存款 — 标准利率</option>
+              <option>智能推荐打包 — AI自动建议最优维度组合</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">运动数据利率浮动</label>
+            <select class="form-select">
+              <option>1-3维度: +0%</option>
+              <option>4-6维度: +5%</option>
+              <option>7-8维度: +10%</option>
+              <option selected>9-10维度: +20%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">模型推理分润比例</label>
+            <select class="form-select">
+              <option selected>数据所有者60% : 模型方25% : 银行15%</option>
+              <option>数据所有者50% : 模型方35% : 银行15%</option>
+              <option>数据所有者70% : 模型方20% : 银行10%</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label class="form-label">鉴权方白名单（运动数据）</label>
+            <div style="display:flex;flex-wrap:wrap;gap:0.35rem;font-size:0.75rem;">
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox" checked> Garmin Connect</label>
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox" checked> Apple Health</label>
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox" checked> Strava</label>
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox" checked> Keep</label>
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox"> Coros</label>
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox"> Polar</label>
+              <label style="display:flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;background:var(--bg-root);border-radius:999px;"><input type="checkbox"> Whoop</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">TEE隐私计算策略</label>
+            <select class="form-select">
+              <option selected>原始数据脱敏 → 仅暴露统计特征和聚合指标</option>
+              <option>完全加密 → 模型推理在TEE内完成</option>
+              <option>差分隐私 → 添加噪声后暴露</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="form-group">
+            <label class="form-label">数据最小留存期</label>
+            <select class="form-select">
+              <option>6个月</option><option selected>12个月</option><option>24个月</option><option>永久</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">运动数据定价基准</label>
+            <select class="form-select">
+              <option>基础版（1-3维）: 100-200 T/GB</option>
+              <option selected>标准版（4-7维）: 200-400 T/GB</option>
+              <option>专业版（8-10维）: 400-600 T/GB</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">模型匹配最小样本量</label>
+            <select class="form-select">
+              <option>Top 20 跑者</option><option selected>Top 50 跑者</option><option>Top 100 跑者</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;padding:0.5rem;background:var(--bg-root);border-radius:4px;">
+          ⓘ 运动数据存储说明：10个跑步维度独立分片存储于IPFS/Arweave，每个维度可独立授权和定价。TEE可信执行环境对原始敏感数据（心率、呼吸、姿态）进行脱敏处理。鉴权方（Garmin/Apple/Strava）对设备采集数据签发VC可验证凭证。
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 3: ENDORSER MANAGEMENT ===== -->
+    <div class="page" id="page-endorser-mgmt">
+      <div class="tabs" id="endorser-tabs">
+        <div class="tab active" data-endorser="admission">准入审核</div>
+        <div class="tab" data-endorser="rating">评级管理</div>
+        <div class="tab" data-endorser="network">网络管理</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">鉴权方总数</div><div class="kpi-value accent">11</div><div class="kpi-change">AAA 级 4 家</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">待审核申请</div><div class="kpi-value amber">3</div><div class="kpi-change">本月新增 2</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">累计鉴权次数</div><div class="kpi-value emerald">12,840</div><div class="kpi-change up">+8.2% 本月</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">平均纠纷率</div><div class="kpi-value accent2">0.4%</div><div class="kpi-change down">-0.1% 本月</div></div>
+      </div>
+
+      <!-- Admission Sub-tab -->
+      <div class="card" id="endorser-admission">
+        <div class="card-header"><span class="card-title">准入审核队列</span><button class="btn btn-outline btn-sm">刷新</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>申请时间</th><th>机构名称</th><th>鉴权类型</th><th>质押金额</th><th>资质材料</th><th>置信度预估</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">2026-06-14</td><td class="strong">华为终端</td><td>IoT 设备数据鉴权</td><td class="mono">100,000</td><td><span class="badge badge-active">已提交</span></td><td style="color:var(--emerald);">92</td>
+                <td><button class="btn btn-emerald btn-xs" onclick="showToast('success','华为终端 准入审核已通过')">通过</button> <button class="btn btn-red btn-xs" onclick="showToast('info','已拒绝 华为终端 的准入申请')">拒绝</button></td>
+              </tr>
+              <tr>
+                <td class="mono">2026-06-12</td><td class="strong">京东健康</td><td>医疗健康数据鉴权</td><td class="mono">80,000</td><td><span class="badge badge-pending">审核中</span></td><td style="color:var(--accent2);">85</td>
+                <td><button class="btn btn-emerald btn-xs" onclick="showToast('success','京东健康 准入审核已通过')">通过</button> <button class="btn btn-red btn-xs" onclick="showToast('info','已拒绝 京东健康 的准入申请')">拒绝</button></td>
+              </tr>
+              <tr>
+                <td class="mono">2026-06-10</td><td class="strong">特斯拉中国</td><td>企业运营数据鉴权</td><td class="mono">150,000</td><td><span class="badge badge-pending">审核中</span></td><td style="color:var(--amber);">78</td>
+                <td><button class="btn btn-emerald btn-xs" onclick="showToast('success','特斯拉中国 准入审核已通过')">通过</button> <button class="btn btn-red btn-xs" onclick="showToast('info','已拒绝 特斯拉中国 的准入申请')">拒绝</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rating Sub-tab -->
+      <div class="card" id="endorser-rating" style="display:none;">
+        <div class="card-header"><span class="card-title">鉴权方评级管理</span><button class="btn btn-outline btn-sm">更新评级</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>鉴权方</th><th>类型</th><th>置信度</th><th>质押</th><th>背书次数</th><th>纠纷率</th><th>当前评级</th><th>调整评级</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="strong">Apple Health</td><td>设备商</td><td style="color:var(--emerald);">94</td><td class="mono">100K</td><td class="mono">2,350</td><td class="mono" style="color:var(--emerald);">0.3%</td>
+                <td><span class="badge badge-aaa">AAA</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option selected>AAA</option><option>AA</option><option>A</option><option>B</option></select></td>
+              </tr>
+              <tr>
+                <td class="strong">国家电网</td><td>机构</td><td style="color:var(--emerald);">96</td><td class="mono">120K</td><td class="mono">1,840</td><td class="mono" style="color:var(--emerald);">0.1%</td>
+                <td><span class="badge badge-aaa">AAA</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option selected>AAA</option><option>AA</option><option>A</option><option>B</option></select></td>
+              </tr>
+              <tr>
+                <td class="strong">小米 IoT</td><td>设备商</td><td style="color:var(--accent2);">88</td><td class="mono">80K</td><td class="mono">1,620</td><td class="mono" style="color:var(--amber);">0.8%</td>
+                <td><span class="badge badge-aa">AA</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option>AAA</option><option selected>AA</option><option>A</option><option>B</option></select></td>
+              </tr>
+              <tr>
+                <td class="strong">SGS 检测认证</td><td>检测机构</td><td style="color:var(--amber);">72</td><td class="mono">50K</td><td class="mono">890</td><td class="mono" style="color:var(--amber);">1.5%</td>
+                <td><span class="badge badge-a">A</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option>AAA</option><option>AA</option><option selected>A</option><option>B</option></select></td>
+              </tr>
+              <tr>
+                <td class="strong">华测检测</td><td>检测机构</td><td style="color:var(--red);">58</td><td class="mono">30K</td><td class="mono">320</td><td class="mono" style="color:var(--red);">3.2%</td>
+                <td><span class="badge badge-b">B</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option>AAA</option><option>AA</option><option>A</option><option selected>B</option></select></td>
+              </tr>
+              <tr style="background:var(--bg-hover);">
+                <td class="strong">⌂ Garmin Connect</td><td>运动设备商</td><td style="color:var(--emerald);">96</td><td class="mono">150K</td><td class="mono">3,120</td><td class="mono" style="color:var(--emerald);">0.15%</td>
+                <td><span class="badge badge-aaa">AAA</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option selected>AAA</option><option>AA</option><option>A</option><option>B</option></select></td>
+              </tr>
+              <tr style="background:var(--bg-hover);">
+                <td class="strong">⌂ Strava</td><td>运动平台</td><td style="color:var(--accent2);">90</td><td class="mono">100K</td><td class="mono">2,840</td><td class="mono" style="color:var(--emerald);">0.4%</td>
+                <td><span class="badge badge-aa">AA</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option>AAA</option><option selected>AA</option><option>A</option><option>B</option></select></td>
+              </tr>
+              <tr style="background:var(--bg-hover);">
+                <td class="strong">⌂ Keep</td><td>运动平台</td><td style="color:var(--amber);">78</td><td class="mono">60K</td><td class="mono">1,560</td><td class="mono" style="color:var(--amber);">1.2%</td>
+                <td><span class="badge badge-a">A</span></td>
+                <td><select class="form-select" style="width:100px;padding:0.2rem 0.4rem;font-size:0.75rem;display:inline-block;" onchange="showToast('success','评级已更新')"><option>AAA</option><option>AA</option><option selected>A</option><option>B</option></select></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Network Sub-tab -->
+      <div class="card" id="endorser-network" style="display:none;">
+        <div class="card-header"><span class="card-title">鉴权方网络拓扑</span><button class="btn btn-outline btn-sm">刷新</button></div>
+        <div class="network-container" id="chart-network"></div>
+        <div class="table-wrap" style="margin-top:1rem;">
+          <table>
+            <thead><tr><th>鉴权方</th><th>连接节点数</th><th>数据流通量</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">Apple Health</td><td class="mono">12</td><td class="mono">2.4 TB/月</td><td><span class="badge badge-online">在线</span></td><td><span class="toggle on" onclick="toggleSwitch(this)"></span></td></tr>
+              <tr><td class="strong">国家电网</td><td class="mono">18</td><td class="mono">5.1 TB/月</td><td><span class="badge badge-online">在线</span></td><td><span class="toggle on" onclick="toggleSwitch(this)"></span></td></tr>
+              <tr><td class="strong">小米 IoT</td><td class="mono">8</td><td class="mono">1.8 TB/月</td><td><span class="badge badge-online">在线</span></td><td><span class="toggle on" onclick="toggleSwitch(this)"></span></td></tr>
+              <tr><td class="strong">SGS 检测认证</td><td class="mono">4</td><td class="mono">0.6 TB/月</td><td><span class="badge badge-offline">离线</span></td><td><span class="toggle" onclick="toggleSwitch(this)"></span></td></tr>
+              <tr style="background:var(--bg-hover);"><td class="strong">⌂ Garmin Connect</td><td class="mono">22</td><td class="mono">3.8 TB/月</td><td><span class="badge badge-online">在线</span></td><td><span class="toggle on" onclick="toggleSwitch(this)"></span></td></tr>
+              <tr style="background:var(--bg-hover);"><td class="strong">⌂ Strava</td><td class="mono">16</td><td class="mono">2.1 TB/月</td><td><span class="badge badge-online">在线</span></td><td><span class="toggle on" onclick="toggleSwitch(this)"></span></td></tr>
+              <tr style="background:var(--bg-hover);"><td class="strong">⌂ Keep</td><td class="mono">9</td><td class="mono">0.9 TB/月</td><td><span class="badge badge-online">在线</span></td><td><span class="toggle on" onclick="toggleSwitch(this)"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 4: PROTOCOL RULES ===== -->
+    <div class="page" id="page-protocol-rules">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">规则总数</div><div class="kpi-value accent">8</div><div class="kpi-change">最近更新 2026-06-10</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">生效规则</div><div class="kpi-value emerald">6</div><div class="kpi-change">草案 2 条</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">版本历史</div><div class="kpi-value amber">24</div><div class="kpi-change">累计变更次数</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">合规检查</div><div class="kpi-value accent2">通过</div><div class="kpi-change up">最近一次 06-15</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">协议账户规则参数配置</span><button class="btn btn-primary btn-sm" onclick="openModal('rule-edit')">编辑规则</button></div>
+
+        <div class="col-3">
+          <div class="card card-glass" style="border-color:rgba(245,158,11,0.2);">
+            <h4 style="color:var(--accent);margin-bottom:0.8rem;">分账比例</h4>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.84rem;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-3);">银行</span><span class="mono" style="color:var(--accent);">10%</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-3);">数据所有方</span><span class="mono" style="color:var(--accent2);">70%</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-3);">鉴权方</span><span class="mono" style="color:var(--emerald);">20%</span></div>
+            </div>
+          </div>
+          <div class="card card-glass" style="border-color:rgba(6,182,212,0.2);">
+            <h4 style="color:var(--accent2);margin-bottom:0.8rem;">利息规则</h4>
+            <div style="font-size:0.84rem;color:var(--text-2);line-height:1.6;">
+              <div>活期: 年化 3.2%~6.0%</div>
+              <div>定期: 年化 5.8%~8.5%</div>
+              <div>零存整取: 年化 8.5%~10.0%</div>
+              <div>结算周期: 按月复利</div>
+            </div>
+          </div>
+          <div class="card card-glass" style="border-color:rgba(52,211,153,0.2);">
+            <h4 style="color:var(--emerald);margin-bottom:0.8rem;">休眠与仲裁</h4>
+            <div style="font-size:0.84rem;color:var(--text-2);line-height:1.6;">
+              <div>休眠: 12个月无使用利率归零</div>
+              <div>恢复: 使用后立即恢复利率</div>
+              <div>仲裁: 链上投票 7 日决议</div>
+              <div>仲裁阈值: 51% 同意通过</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">当前生效规则列表</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>规则编号</th><th>规则名称</th><th>参数</th><th>生效日期</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">R-001</td><td class="strong">分账比例</td><td class="mono">银行10% : 用户70% : 鉴权方20%</td><td class="mono">2026-01-01</td><td><span class="badge badge-published">生效中</span></td><td><button class="btn btn-ghost btn-xs" onclick="openModal('rule-edit')">编辑</button></td></tr>
+              <tr><td class="mono">R-002</td><td class="strong">利息计算规则</td><td class="mono">按月复利，活期3.2%~6.0%</td><td class="mono">2026-01-01</td><td><span class="badge badge-published">生效中</span></td><td><button class="btn btn-ghost btn-xs" onclick="openModal('rule-edit')">编辑</button></td></tr>
+              <tr><td class="mono">R-003</td><td class="strong">休眠规则</td><td class="mono">12个月无使用利率归零</td><td class="mono">2026-03-15</td><td><span class="badge badge-published">生效中</span></td><td><button class="btn btn-ghost btn-xs" onclick="openModal('rule-edit')">编辑</button></td></tr>
+              <tr><td class="mono">R-004</td><td class="strong">纠纷仲裁规则</td><td class="mono">链上投票 7日决议 51%通过</td><td class="mono">2026-02-01</td><td><span class="badge badge-published">生效中</span></td><td><button class="btn btn-ghost btn-xs" onclick="openModal('rule-edit')">编辑</button></td></tr>
+              <tr><td class="mono">R-005</td><td class="strong">质押率上限</td><td class="mono">最高 50%</td><td class="mono">2026-04-01</td><td><span class="badge badge-published">生效中</span></td><td><button class="btn btn-ghost btn-xs" onclick="openModal('rule-edit')">编辑</button></td></tr>
+              <tr><td class="mono">R-006</td><td class="strong">鉴权方准入标准</td><td class="mono">最低质押50K，置信度>70</td><td class="mono">2026-05-01</td><td><span class="badge badge-draft">草案</span></td><td><button class="btn btn-ghost btn-xs" onclick="openModal('rule-edit')">编辑</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">版本历史</span><span class="card-subtitle">最近 5 条变更</span></div>
+        <div style="max-height:220px;overflow-y:auto;">
+          <div class="version-item">
+            <div class="version-dot current"></div>
+            <div class="version-info">
+              <div class="v-id">v2.4.0</div>
+              <div class="v-date">2026-06-10 14:32 · Bank Admin</div>
+              <div class="v-desc">调整分账比例: 银行 10% | 用户 70% | 鉴权方 20%</div>
+            </div>
+          </div>
+          <div class="version-item">
+            <div class="version-dot"></div>
+            <div class="version-info">
+              <div class="v-id">v2.3.1</div>
+              <div class="v-date">2026-05-28 09:15 · Bank Admin</div>
+              <div class="v-desc">新增鉴权方准入标准规则草案</div>
+            </div>
+          </div>
+          <div class="version-item">
+            <div class="version-dot"></div>
+            <div class="version-info">
+              <div class="v-id">v2.3.0</div>
+              <div class="v-date">2026-04-15 16:40 · Bank Admin</div>
+              <div class="v-desc">将质押率上限从 60% 调整为 50%</div>
+            </div>
+          </div>
+          <div class="version-item">
+            <div class="version-dot"></div>
+            <div class="version-info">
+              <div class="v-id">v2.2.0</div>
+              <div class="v-date">2026-03-20 11:08 · Bank Admin</div>
+              <div class="v-desc">新增 12 个月休眠规则，利率归零机制</div>
+            </div>
+          </div>
+          <div class="version-item">
+            <div class="version-dot"></div>
+            <div class="version-info">
+              <div class="v-id">v2.1.0</div>
+              <div class="v-date">2026-02-05 08:50 · Bank Admin</div>
+              <div class="v-desc">新增纠纷仲裁规则: 链上投票 7 日决议</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 5: DATA MODELS ===== -->
+    <div class="page" id="page-data-models">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">模型总数</div><div class="kpi-value accent">12</div><div class="kpi-change">已启用 9</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">本月调用量</div><div class="kpi-value emerald">48.2K</div><div class="kpi-change up">+22.5% 环比</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">模型收入</div><div class="kpi-value amber">86.4K</div><div class="kpi-change up">+18.3% 本月</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">平均 Token/h</div><div class="kpi-value accent2">1,250</div><div class="kpi-change">费率区间 500~2,500</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">数据应用模型列表</span>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-outline btn-sm">筛选</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('add-model')">+ 新增模型</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>模型名称</th><th>类型</th><th>Token/h 费率</th><th>适用场景</th><th>调用量/月</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">用户画像分析</td><td>画像/标签</td><td class="mono" style="color:var(--accent);">1,500</td><td>精准营销、用户分群</td><td class="mono">8,200</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+              <tr><td class="strong">设备故障预测</td><td>预测/诊断</td><td class="mono" style="color:var(--accent);">2,500</td><td>工业设备维护</td><td class="mono">12,400</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+              <tr><td class="strong">消费倾向评分</td><td>评分/排行</td><td class="mono" style="color:var(--accent2);">800</td><td>零售、金融风控</td><td class="mono">6,800</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+              <tr><td class="strong">健康风险评估</td><td>评估/预警</td><td class="mono" style="color:var(--accent);">2,000</td><td>医疗健康、保险</td><td class="mono">9,500</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+              <tr><td class="strong">能源消耗预测</td><td>预测/分析</td><td class="mono" style="color:var(--accent2);">1,200</td><td>能源管理、碳排核算</td><td class="mono">4,300</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+              <tr><td class="strong">智能推荐引擎</td><td>推荐/匹配</td><td class="mono" style="color:var(--amber);">500</td><td>内容推荐、产品匹配</td><td class="mono">3,200</td><td><span class="badge badge-draft">已禁用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-emerald btn-xs" onclick="toggleModelStatus(this)">启用</button></td></tr>
+              <tr><td class="strong">反欺诈检测</td><td>检测/风控</td><td class="mono" style="color:var(--accent);">1,800</td><td>金融交易、保险理赔</td><td class="mono">2,800</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+              <tr><td class="strong">数据质量评估</td><td>评估/检测</td><td class="mono" style="color:var(--accent2);">600</td><td>数据治理、合规审计</td><td class="mono">1,000</td><td><span class="badge badge-published">已启用</span></td><td><button class="btn btn-ghost btn-xs">编辑</button> <button class="btn btn-red btn-xs" onclick="toggleModelStatus(this)">禁用</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 6: REVENUE ANALYSIS ===== -->
+    <div class="page" id="page-revenue-analysis">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">本月总收益</div><div class="kpi-value accent" data-count="186000">0</div><div class="kpi-change up">+15.3% 环比</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">存款利息收入</div><div class="kpi-value emerald">54.2K</div><div class="kpi-change">占比 29.1%</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">理财分润收入</div><div class="kpi-value amber">72.8K</div><div class="kpi-change">占比 39.1%</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">贷款利息收入</div><div class="kpi-value accent2">22.4K</div><div class="kpi-change">占比 12.0%</div></div>
+      </div>
+
+      <div class="col-2">
+        <div class="chart-box">
+          <div class="chart-head"><span class="card-title">收益构成分布</span></div>
+          <div class="chart-inner" id="chart-revenue-breakdown"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-head"><span class="card-title">各鉴权方收益贡献</span></div>
+          <div class="chart-inner" id="chart-endorser-revenue"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">月度收益明细</span><button class="btn btn-outline btn-sm">导出报表</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>月份</th><th>存款利息</th><th>理财分润</th><th>贷款利息</th><th>模型收入</th><th>鉴权分润</th><th>合计</th><th>环比</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">2026-06</td><td class="mono" style="color:var(--accent);">54.2K</td><td class="mono" style="color:var(--amber);">72.8K</td><td class="mono" style="color:var(--accent2);">22.4K</td><td class="mono" style="color:var(--emerald);">28.6K</td><td class="mono" style="color:var(--rose);">8.0K</td><td class="mono strong">186.0K</td><td class="up">+15.3%</td></tr>
+              <tr><td class="strong">2026-05</td><td class="mono">48.1K</td><td class="mono">63.2K</td><td class="mono">19.8K</td><td class="mono">24.5K</td><td class="mono">5.6K</td><td class="mono strong">161.2K</td><td class="up">+8.7%</td></tr>
+              <tr><td class="strong">2026-04</td><td class="mono">42.5K</td><td class="mono">58.4K</td><td class="mono">18.2K</td><td class="mono">22.1K</td><td class="mono">7.2K</td><td class="mono strong">148.4K</td><td class="up">+5.2%</td></tr>
+              <tr><td class="strong">2026-03</td><td class="mono">38.8K</td><td class="mono">55.6K</td><td class="mono">17.5K</td><td class="mono">20.8K</td><td class="mono">8.4K</td><td class="mono strong">141.1K</td><td class="up">+3.4%</td></tr>
+              <tr><td class="strong">2026-02</td><td class="mono">35.2K</td><td class="mono">52.1K</td><td class="mono">16.8K</td><td class="mono">18.4K</td><td class="mono">6.9K</td><td class="mono strong">129.4K</td><td class="up">+2.8%</td></tr>
+              <tr><td class="strong">2026-01</td><td class="mono">32.6K</td><td class="mono">48.9K</td><td class="mono">15.2K</td><td class="mono">16.5K</td><td class="mono">12.6K</td><td class="mono strong">125.8K</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ===== MODAL: EDIT RULE ===== -->
+<div class="modal-overlay" id="modal-rule-edit">
+  <div class="modal">
+    <h3>编辑协议规则</h3>
+    <div class="form-group">
+      <label class="form-label">规则编号</label>
+      <input class="form-input" value="R-001" disabled>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">银行分账比例 (%)</label>
+        <input class="form-input" type="number" value="10" placeholder="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">用户分账比例 (%)</label>
+        <input class="form-input" type="number" value="70" placeholder="70">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">鉴权方分账比例 (%)</label>
+      <input class="form-input" type="number" value="20" placeholder="20">
+    </div>
+    <div class="form-hint">注意: 三项比例之和必须为 100%</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('rule-edit')">取消</button>
+      <button class="btn btn-primary" onclick="closeModal('rule-edit');showToast('success','规则已更新，新版本 v2.5.0 已生效')">保存并生效</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ADD MODEL ===== -->
+<div class="modal-overlay" id="modal-add-model">
+  <div class="modal">
+    <h3>新增数据应用模型</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">模型名称</label>
+        <input class="form-input" placeholder="如：用户行为预测">
+      </div>
+      <div class="form-group">
+        <label class="form-label">模型类型</label>
+        <select class="form-select">
+          <option>画像/标签</option><option>预测/诊断</option><option>评分/排行</option>
+          <option>评估/预警</option><option>推荐/匹配</option><option>检测/风控</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Token/小时 费率</label>
+        <input class="form-input" type="number" value="1000" placeholder="1000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">适用场景</label>
+        <input class="form-input" placeholder="如：精准营销、用户分群">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('add-model')">取消</button>
+      <button class="btn btn-primary" onclick="closeModal('add-model');showToast('success','模型已创建，进入审核流程')">创建模型</button>
+    </div>
+  </div>
+</div>
+
+<script src="echarts.min.js"></script>
+<script>
+// ===== NAVIGATION =====
+document.querySelectorAll('.nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var page = this.dataset.page;
+    switchPage(page);
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  var titles = {
+    'dashboard': '管理驾驶舱',
+    'product-config': '产品配置',
+    'endorser-mgmt': '鉴权方管理',
+    'protocol-rules': '协议规则',
+    'data-models': '数据应用模型',
+    'revenue-analysis': '收益分析'
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+  document.getElementById('breadcrumbPage').textContent = titles[page] || page;
+}
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+// Product config tabs
+document.querySelectorAll('#product-tabs .tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    var product = this.dataset.product;
+    document.getElementById('product-form-deposit').style.display = product === 'deposit' ? '' : 'none';
+    document.getElementById('product-form-wealth').style.display = product === 'wealth' ? '' : 'none';
+    document.getElementById('product-form-loan').style.display = product === 'loan' ? '' : 'none';
+  });
+});
+
+// Endorser management tabs
+document.querySelectorAll('#endorser-tabs .tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    var endorser = this.dataset.endorser;
+    document.getElementById('endorser-admission').style.display = endorser === 'admission' ? '' : 'none';
+    document.getElementById('endorser-rating').style.display = endorser === 'rating' ? '' : 'none';
+    document.getElementById('endorser-network').style.display = endorser === 'network' ? '' : 'none';
+    if (endorser === 'network') { setTimeout(initNetworkChart, 200); }
+  });
+});
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById('modal-' + id).classList.add('show'); }
+function closeModal(id) { document.getElementById('modal-' + id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+});
+
+// ===== LOGIN / REGISTER =====
+function handleLogin(e) {
+  e.preventDefault();
+  var id = document.getElementById('loginId').value.trim();
+  var pw = document.getElementById('loginPassword').value.trim();
+  if (!id || !pw) { document.getElementById('loginError').textContent = '请输入账号和密码'; return; }
+  if (pw.length < 4) { document.getElementById('loginError').textContent = '密码至少4位'; return; }
+  document.getElementById('loginError').textContent = '';
+
+  var user = { id: id, name: 'Bank Admin - ' + (id.split('@')[0] || id), role: 'Bank Admin', avatar: (id.substring(0,2) || 'BA').toUpperCase() };
+  localStorage.setItem('databank_bank_user', JSON.stringify(user));
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('sett-account').textContent = id;
+  updateUserChip(user);
+  showToast('success', '已登录银行业务平台，欢迎回来！');
+}
+
+function updateUserChip(user) {
+  var chip = document.querySelector('.user-chip');
+  if (chip) {
+    chip.querySelector('.user-avatar').textContent = user.avatar;
+    chip.querySelector('.user-name').textContent = user.name;
+  }
+}
+
+(function() {
+  var saved = localStorage.getItem('databank_bank_user');
+  if (saved) {
+    try {
+      var user = JSON.parse(saved);
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('sett-account').textContent = user.id;
+    } catch(e) { localStorage.removeItem('databank_bank_user'); }
+  }
+})();
+
+function openSettings() { document.getElementById('settingsOverlay').classList.remove('hidden'); }
+function closeSettings() { document.getElementById('settingsOverlay').classList.add('hidden'); }
+document.getElementById('settingsOverlay').addEventListener('click', function(e) { if (e.target === this) closeSettings(); });
+document.querySelectorAll('#settingsNav .settings-nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.settings-nav-item').forEach(function(i) { i.classList.remove('active'); });
+    this.classList.add('active');
+    document.querySelectorAll('.settings-section').forEach(function(s) { s.classList.remove('active'); });
+    var target = document.getElementById('sett-' + this.dataset.settings);
+    if (target) target.classList.add('active');
+  });
+});
+
+// ===== TOASTS =====
+function showToast(type, message) {
+  var container = document.getElementById('toast-container');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  var icons = { success: '\u2713', info: '\u2139' };
+  toast.innerHTML = '<span class="toast-icon">' + (icons[type]||'') + '</span>' + message;
+  container.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(40px)';
+    toast.style.transition = 'all 300ms ease';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 3000);
+}
+
+// ===== TOGGLE SWITCH =====
+function toggleSwitch(el) {
+  el.classList.toggle('on');
+  var row = el.closest('tr');
+  var badge = row.querySelector('.badge');
+  if (el.classList.contains('on')) {
+    badge.className = 'badge badge-online';
+    badge.textContent = '在线';
+    showToast('success', '鉴权方已启用');
+  } else {
+    badge.className = 'badge badge-offline';
+    badge.textContent = '离线';
+    showToast('info', '鉴权方已禁用');
+  }
+}
+
+// ===== TOGGLE PUBLISH =====
+function togglePublish(btn) {
+  var row = btn.closest('tr');
+  var badge = row.querySelector('.badge');
+  if (badge.classList.contains('badge-published')) {
+    badge.className = 'badge badge-draft';
+    badge.textContent = '草稿';
+    btn.className = 'btn btn-emerald btn-xs';
+    btn.textContent = '发布';
+    showToast('info', '产品已下架');
+  } else {
+    badge.className = 'badge badge-published';
+    badge.textContent = '已发布';
+    btn.className = 'btn btn-red btn-xs';
+    btn.textContent = '下架';
+    showToast('success', '产品已发布');
+  }
+}
+
+// ===== TOGGLE MODEL STATUS =====
+function toggleModelStatus(btn) {
+  var row = btn.closest('tr');
+  var badge = row.querySelector('.badge');
+  if (badge.classList.contains('badge-published')) {
+    badge.className = 'badge badge-draft';
+    badge.textContent = '已禁用';
+    btn.className = 'btn btn-emerald btn-xs';
+    btn.textContent = '启用';
+    showToast('info', '模型已禁用');
+  } else {
+    badge.className = 'badge badge-published';
+    badge.textContent = '已启用';
+    btn.className = 'btn btn-red btn-xs';
+    btn.textContent = '禁用';
+    showToast('success', '模型已启用');
+  }
+}
+
+// ===== KPI COUNTING ANIMATION =====
+function animateCounters() {
+  document.querySelectorAll('.kpi-value[data-count]').forEach(function(el) {
+    var target = parseInt(el.dataset.count);
+    var prefix = el.dataset.prefix || '';
+    var duration = 1200;
+    var start = performance.now();
+    function tick(now) {
+      var progress = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = Math.floor(target * eased);
+      el.textContent = prefix + current.toLocaleString('zh-CN');
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// ===== CHARTS =====
+function initCharts() {
+  // Revenue Trend
+  var revDom = document.getElementById('chart-revenue');
+  if (revDom) {
+    var revChart = echarts.init(revDom);
+    var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    var revenue = [8.2, 8.5, 9.1, 9.8, 10.5, 12.1, 12.8, 13.5, 14.2, 15.0, 16.8, 18.6];
+    revChart.setOption({
+      grid: { left: 50, right: 15, top: 10, bottom: 30 },
+      xAxis: { type:'category', data:months, axisLabel:{color:'#546580',fontSize:10}, axisLine:{lineStyle:{color:'#192847'}} },
+      yAxis: { type:'value', axisLabel:{color:'#546580',fontSize:10,formatter:'{value}万'}, splitLine:{lineStyle:{color:'#192847',type:'dashed'}} },
+      series: [{
+        type:'line', data:revenue, smooth:true, symbol:'circle', symbolSize:6,
+        lineStyle:{color:'#f59e0b',width:2.5},
+        itemStyle:{color:'#f59e0b'},
+        areaStyle:{color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(245,158,11,0.18)'},{offset:1,color:'rgba(245,158,11,0)'}])},
+      }],
+      tooltip: { trigger:'axis', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#2a1f0f', textStyle:{color:'#e8edf5',fontSize:12} }
+    });
+  }
+
+  // User Growth
+  var userDom = document.getElementById('chart-user-growth');
+  if (userDom) {
+    var userChart = echarts.init(userDom);
+    var m = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    var users = [8200, 8600, 9100, 9500, 9900, 10400, 10800, 11200, 11600, 11900, 12200, 12480];
+    userChart.setOption({
+      grid: { left: 50, right: 15, top: 10, bottom: 30 },
+      xAxis: { type:'category', data:m, axisLabel:{color:'#546580',fontSize:10,interval:1}, axisLine:{lineStyle:{color:'#192847'}} },
+      yAxis: { type:'value', axisLabel:{color:'#546580',fontSize:10}, splitLine:{lineStyle:{color:'#192847',type:'dashed'}} },
+      series: [{
+        type:'bar', data:users, barWidth:'50%',
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#f59e0b'},{offset:1,color:'rgba(245,158,11,0.15)'}]),
+          borderRadius: [5,5,0,0]
+        }
+      }],
+      tooltip: { trigger:'axis', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#2a1f0f', textStyle:{color:'#e8edf5',fontSize:12} }
+    });
+  }
+
+  // Product Distribution Donut
+  var prodDom = document.getElementById('chart-product-dist');
+  if (prodDom) {
+    var prodChart = echarts.init(prodDom);
+    prodChart.setOption({
+      tooltip: { trigger:'item', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#2a1f0f', textStyle:{color:'#e8edf5',fontSize:12} },
+      series: [{
+        type:'pie', radius:['52%','78%'], center:['50%','50%'],
+        itemStyle:{ borderColor:'#0e1629', borderWidth:4 },
+        label:{ color:'#94a3b8', fontSize:11 },
+        data: [
+          { value:40, name:'存款产品', itemStyle:{color:'#f59e0b'} },
+          { value:30, name:'理财产品', itemStyle:{color:'#06b6d4'} },
+          { value:20, name:'贷款产品', itemStyle:{color:'#34d399'} },
+          { value:10, name:'模型服务', itemStyle:{color:'#f472b6'} }
+        ]
+      }]
+    });
+  }
+
+  // Revenue Breakdown
+  var revBdDom = document.getElementById('chart-revenue-breakdown');
+  if (revBdDom) {
+    var revBdChart = echarts.init(revBdDom);
+    revBdChart.setOption({
+      tooltip: { trigger:'item', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#2a1f0f', textStyle:{color:'#e8edf5',fontSize:12} },
+      series: [{
+        type:'pie', radius:['50%','75%'], center:['50%','50%'],
+        itemStyle:{ borderColor:'#0e1629', borderWidth:4 },
+        label:{ color:'#94a3b8', fontSize:11, formatter:'{b}\n{d}%' },
+        data: [
+          { value:39.1, name:'理财分润', itemStyle:{color:'#f59e0b'} },
+          { value:29.1, name:'存款利息', itemStyle:{color:'#34d399'} },
+          { value:15.4, name:'模型收入', itemStyle:{color:'#06b6d4'} },
+          { value:12.0, name:'贷款利息', itemStyle:{color:'#f472b6'} },
+          { value:4.4, name:'鉴权分润', itemStyle:{color:'#818cf8'} }
+        ]
+      }]
+    });
+  }
+
+  // Endorser Revenue
+  var endRevDom = document.getElementById('chart-endorser-revenue');
+  if (endRevDom) {
+    var endRevChart = echarts.init(endRevDom);
+    endRevChart.setOption({
+      grid: { left: 90, right: 15, top: 10, bottom: 20 },
+      xAxis: { type:'value', axisLabel:{color:'#546580',fontSize:10,formatter:'{value}K'}, splitLine:{lineStyle:{color:'#192847',type:'dashed'}} },
+      yAxis: { type:'category', data:['华测检测','SGS','小米 IoT','国家电网','Apple Health'], axisLabel:{color:'#94a3b8',fontSize:10}, axisLine:{lineStyle:{color:'#192847'}} },
+      series: [{
+        type:'bar', data:[12, 28, 42, 58, 72], barWidth:'50%',
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'rgba(245,158,11,0.3)'},{offset:1,color:'#f59e0b'}]),
+          borderRadius: [0,5,5,0]
+        },
+        label:{ show:true, position:'right', color:'#94a3b8', fontSize:10, formatter:'{c}K' }
+      }],
+      tooltip: { trigger:'axis', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#2a1f0f', textStyle:{color:'#e8edf5',fontSize:12} }
+    });
+  }
+}
+
+// ===== NETWORK GRAPH =====
+function initNetworkChart() {
+  var netDom = document.getElementById('chart-network');
+  if (!netDom || netDom._inited) return;
+  netDom._inited = true;
+  var netChart = echarts.init(netDom);
+  var nodes = [
+    { name:'DataBank', x:300, y:160, symbolSize:50, itemStyle:{color:'#f59e0b'} },
+    { name:'Apple Health', x:100, y:60, symbolSize:35, itemStyle:{color:'#34d399'} },
+    { name:'国家电网', x:100, y:260, symbolSize:40, itemStyle:{color:'#34d399'} },
+    { name:'小米 IoT', x:500, y:60, symbolSize:30, itemStyle:{color:'#06b6d4'} },
+    { name:'SGS', x:500, y:260, symbolSize:25, itemStyle:{color:'#f87171'} },
+    { name:'招商银行', x:200, y:160, symbolSize:20, itemStyle:{color:'#94a3b8'} },
+    { name:'工商银行', x:400, y:160, symbolSize:20, itemStyle:{color:'#94a3b8'} },
+    { name:'华为终端', x:300, y:30, symbolSize:22, itemStyle:{color:'#f59e0b'} }
+  ];
+  var links = [
+    { source:'DataBank', target:'Apple Health' },
+    { source:'DataBank', target:'国家电网' },
+    { source:'DataBank', target:'小米 IoT' },
+    { source:'DataBank', target:'SGS' },
+    { source:'Apple Health', target:'招商银行' },
+    { source:'国家电网', target:'工商银行' },
+    { source:'小米 IoT', target:'招商银行' },
+    { source:'DataBank', target:'华为终端' },
+    { source:'Apple Health', target:'小米 IoT' },
+    { source:'国家电网', target:'SGS' }
+  ];
+  netChart.setOption({
+    tooltip: { backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#2a1f0f', textStyle:{color:'#e8edf5',fontSize:12} },
+    series: [{
+      type:'graph', layout:'none', roam:false,
+      data:nodes, links:links,
+      lineStyle:{ color:'#192847', curveness:0.2, width:1.5 },
+      label:{ show:true, position:'bottom', color:'#94a3b8', fontSize:10, distance:8 },
+      emphasis:{ focus:'adjacency', lineStyle:{ width:3 } }
+    }]
+  });
+}
+
+// ===== INITIALIZATION =====
+animateCounters();
+setTimeout(initCharts, 300);
+
+// Re-animate counters when switching to dashboard
+var origSwitchPage = switchPage;
+switchPage = function(page) {
+  origSwitchPage(page);
+  if (page === 'dashboard') {
+    setTimeout(animateCounters, 100);
+    setTimeout(initCharts, 300);
+  }
+  if (page === 'revenue-analysis') {
+    setTimeout(initCharts, 300);
+  }
+};
+
+// Auto-update block height every 10s
+setInterval(function() {
+  var el = document.querySelector('.live-block');
+  if (el) {
+    var h = parseInt(el.textContent.replace(/,/g,'').replace('#','')) + Math.floor(Math.random() * 3);
+    el.textContent = '#' + h.toLocaleString('zh-CN');
+  }
+}, 10000);
+</script>
+</body>
+</html>

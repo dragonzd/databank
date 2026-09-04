@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据银行 · 海报</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b12;
+  --bg2:#0d1119;
+  --ink:#e9e4d8;
+  --muted:#9aa1b0;
+  --muted2:#6b7383;
+  --rule:rgba(201,169,106,.18);
+  --accent:#c9a96a;
+  --accent-bright:#e6c88a;
+  --accent2:#4fa3a5;
+  --serif:"Noto Serif SC",serif;
+  --sans:"Noto Sans SC",sans-serif;
+  --mono:"JetBrains Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#04060b;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--sans);
+  padding:32px;
+  -webkit-font-smoothing:antialiased;
+}
+.poster{
+  width:100%;
+  max-width:560px;
+  aspect-ratio:9/16;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(201,169,106,.14), transparent 55%),
+    radial-gradient(90% 40% at 50% 100%, rgba(79,163,165,.10), transparent 60%),
+    linear-gradient(180deg,#0b0f18,#080b12 55%,#070910);
+  position:relative;overflow:hidden;
+  color:var(--ink);
+  display:flex;flex-direction:column;
+  padding:40px 40px 34px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+/* grid texture */
+.poster::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(201,169,106,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,169,106,.05) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 80%);
+}
+/* ring decoration */
+.ring{position:absolute;border:1px solid rgba(201,169,106,.22);border-radius:50%;pointer-events:none}
+.ring1{width:420px;height:420px;right:-140px;top:-80px}
+.ring2{width:260px;height:260px;right:-60px;top:0}
+.ring3{width:150px;height:150px;right:6px;top:56px}
+.coredot{position:absolute;border-radius:50%;pointer-events:none}
+.dot{width:8px;height:8px;background:var(--accent);right:88px;top:120px;box-shadow:0 0 14px var(--accent)}
+
+.content{position:relative;z-index:2;display:flex;flex-direction:column;flex:1}
+
+/* header */
+.topbar{display:flex;justify-content:space-between;align-items:flex-start}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .mark{
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(160deg,var(--accent-bright),var(--accent));
+  color:#0a0d14;font-family:var(--mono);font-weight:600;font-size:16px;
+  box-shadow:0 8px 22px rgba(201,169,106,.35);
+}
+.brand .t{font-family:var(--serif);font-weight:700;font-size:19px;letter-spacing:.04em}
+.brand .s{font-size:10px;color:var(--muted);letter-spacing:.3em;font-family:var(--mono)}
+.top-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--accent);
+  border:1px solid var(--rule);padding:8px 14px;border-radius:14px;
+  line-height:1.9;text-align:right;
+}
+
+/* hero */
+.hero{margin-top:52px}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--accent);
+  margin-bottom:20px;text-transform:uppercase;
+}
+h1{
+  font-family:var(--serif);font-weight:900;
+  font-size:56px;line-height:1.22;letter-spacing:.01em;
+}
+.subline{
+  display:block;margin-top:20px;
+  font-family:var(--serif);font-weight:700;font-size:21px;letter-spacing:.12em;
+  background:linear-gradient(100deg,var(--accent-bright),var(--accent) 60%,#8a6f3c);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero-note{margin-top:26px;font-size:14px;color:var(--muted);line-height:1.9;max-width:86%}
+.hero-note b{color:var(--ink);font-weight:500}
+
+/* pillars */
+.pillars{margin-top:34px;display:flex;flex-direction:column;gap:12px}
+.pillar{
+  display:flex;align-items:center;gap:16px;
+  background:rgba(13,17,25,.6);border:1px solid var(--rule);
+  border-radius:14px;padding:14px 18px;
+}
+.pillar .k{
+  font-family:var(--serif);font-weight:900;font-size:26px;color:var(--accent);
+  width:44px;height:44px;flex:none;display:grid;place-items:center;
+  border:1px solid rgba(201,169,106,.3);border-radius:12px;
+  background:rgba(201,169,106,.08);
+}
+.pillar .txt h3{font-family:var(--serif);font-weight:700;font-size:17px;margin-bottom:2px}
+.pillar .txt p{font-size:12px;color:var(--muted);line-height:1.55}
+
+/* scenes */
+.scenes{margin-top:26px}
+.scenes .cap{font-family:var(--mono);font-size:10px;letter-spacing:.26em;color:var(--muted2);margin-bottom:12px}
+.scene-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scene{
+  font-size:12px;color:var(--muted);line-height:1.5;
+  border-left:2px solid var(--rule);padding:2px 0 2px 10px;
+}
+.scene b{color:var(--ink);font-weight:500;font-family:var(--serif)}
+
+/* footer */
+.foot{
+  margin-top:auto;padding-top:26px;
+  border-top:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.foot .slogan{font-family:var(--serif);font-weight:600;font-size:15px;letter-spacing:.06em}
+.foot .slogan span{color:var(--accent)}
+.foot .meta{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--muted2);text-align:right;line-height:1.8}
+
+@media(max-width:600px){
+  body{padding:0}
+  .poster{max-width:100%;padding:28px 24px 24px}
+  h1{font-size:44px}
+}
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="ring ring1"></div>
+  <div class="ring ring2"></div>
+  <div class="ring ring3"></div>
+  <div class="coredot dot"></div>
+
+  <div class="content">
+    <div class="topbar">
+      <div class="brand">
+        <div class="mark">DB</div>
+        <div>
+          <div class="t">数据银行</div>
+          <div class="s">DATA BANK</div>
+        </div>
+      </div>
+      <div class="top-tag">可信数据增值服务商<br>数据世界基础设施服务商</div>
+    </div>
+
+    <div class="hero">
+      <div class="eyebrow">让数据 · 成为新资产</div>
+      <h1>让数据<br>像资产一样</h1>
+      <div class="subline">存得安心 · 用得放心 · 还能增值</div>
+      <p class="hero-note"><b>区块链联合账户</b>，保障数据所有方、鉴权方、使用方各方的权益与收益；<b>隐私计算</b>让数据<b>「可用不可见」</b>——算结果，不碰明文。</p>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="k">存</div>
+        <div class="txt"><h3>存得安心</h3><p>数据所有方按价值自主存入，自由设定开放粒度与范围</p></div>
+      </div>
+      <div class="pillar">
+        <div class="k">用</div>
+        <div class="txt"><h3>用得放心</h3><p>数据使用方基于鉴权方数据算结果，拿不到原始数据</p></div>
+      </div>
+      <div class="pillar">
+        <div class="k">增</div>
+        <div class="txt"><h3>合作得省心</h3><p>联合账户 + 协议签约，权益自动、公平分配</p></div>
+      </div>
+    </div>
+
+    <div class="scenes">
+      <div class="cap">六大典型场景</div>
+      <div class="scene-grid">
+        <div class="scene"><b>金融</b>　风控联合建模</div>
+        <div class="scene"><b>医疗</b>　科研数据共享</div>
+        <div class="scene"><b>政务</b>　数据一网通办</div>
+        <div class="scene"><b>营销</b>　跨平台精准触达</div>
+        <div class="scene"><b>工业</b>　生产数据变现</div>
+        <div class="scene"><b>运动</b>　个体数据增值</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="slogan">让数据<span>流动</span>起来</div>
+      <div class="meta">可信 · 隐私 · 增值<br>© 2026 DATA BANK</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

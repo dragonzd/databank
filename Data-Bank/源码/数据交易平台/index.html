@@ -1,0 +1,1912 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>银行数据交易平台 · DataBank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --bg-deep: #050a14;
+  --bg-root: #080e1c;
+  --bg-sidebar: #0a1020;
+  --bg-surface: #0e1629;
+  --bg-elevated: #111b33;
+  --bg-hover: #162241;
+  --bg-glass: rgba(14,22,41,0.85);
+  --border: #192847;
+  --border-faint: rgba(25,40,71,0.5);
+  --border-glow: #1e3563;
+  --accent: #34d399;
+  --accent-dim: rgba(52,211,153,0.1);
+  --accent-glow: rgba(52,211,153,0.3);
+  --accent2: #818cf8;
+  --accent2-dim: rgba(129,140,248,0.1);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.1);
+  --emerald: #34d399;
+  --emerald-dim: rgba(52,211,153,0.1);
+  --rose: #f472b6;
+  --rose-dim: rgba(244,114,182,0.1);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.1);
+  --text: #e8edf5;
+  --text-2: #94a3b8;
+  --text-3: #546580;
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size: 15px; }
+body {
+  font-family: 'Lexend', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== NOISE OVERLAY ===== */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ===== SCANLINE ===== */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.scanline {
+  position: fixed; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(52,211,153,0.08), transparent);
+  z-index: 9998; pointer-events: none;
+  animation: scan 6s linear infinite;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-faint);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  z-index: 20;
+  position: relative;
+  backdrop-filter: blur(12px);
+}
+.sidebar::after {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, var(--accent), transparent 60%, var(--accent2) 100%);
+  opacity: 0.15;
+}
+.sidebar-brand {
+  padding: 1.4rem 1.6rem;
+  border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center; gap: 0.85rem;
+}
+.sidebar-brand .logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #34d399 0%, #059669 60%, #818cf8 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 1.05rem;
+  color: #050a14;
+  box-shadow: 0 0 18px rgba(52,211,153,0.2);
+}
+.sidebar-brand .brand-text { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1.1; }
+.sidebar-brand .brand-ver { color: var(--text-3); font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; }
+
+.sidebar-nav { flex:1; padding: 1rem 0.85rem; display: flex; flex-direction: column; gap: 0.15rem; overflow-y: auto; }
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.nav-section {
+  font-size: 0.65rem; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 0.85rem 0.9rem 0.3rem;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 0.88rem; font-weight: 500;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid transparent;
+  position: relative;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text); }
+.nav-item.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(52,211,153,0.15);
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: -0.85rem; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+.nav-item .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; opacity: 0.7; }
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-item .nav-badge {
+  margin-left: auto;
+  font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+  padding: 0.15rem 0.5rem; border-radius: 9px;
+  background: var(--accent-dim); color: var(--accent); font-weight: 600;
+}
+.nav-divider { height: 1px; background: var(--border-faint); margin: 0.4rem 0.9rem; }
+
+.sidebar-footer {
+  padding: 1rem 1.3rem; margin: 0 0.6rem 0.6rem;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-faint);
+}
+.user-chip { display: flex; align-items: center; gap: 0.7rem; }
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), #6366f1);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.78rem; color: #fff;
+}
+.user-info .user-name { font-size: 0.85rem; font-weight: 600; }
+.user-info .user-role { font-size: 0.7rem; color: var(--text-3); }
+
+/* ===== TOPBAR ===== */
+.topbar {
+  height: var(--topbar-h);
+  background: rgba(10,16,32,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center;
+  padding: 0 2rem;
+  gap: 1.5rem;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.topbar .page-title {
+  font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em;
+}
+.topbar .breadcrumb { color: var(--text-3); font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; }
+.topbar .breadcrumb span { color: var(--text-2); }
+.topbar-actions {
+  margin-left: auto; display: flex; align-items: center; gap: 1.2rem;
+}
+.live-indicator { display: flex; align-items: center; gap: 0.4rem; }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--emerald);
+  box-shadow: 0 0 10px rgba(52,211,153,0.6);
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+.live-text { font-size: 0.75rem; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+.live-block { color: var(--text); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.btn-primary {
+  background: var(--accent); color: #050a14; border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(52,211,153,0.15);
+}
+.btn-primary:hover { background: #4ade80; box-shadow: 0 0 28px rgba(52,211,153,0.3); transform: translateY(-1px); }
+.btn-outline {
+  background: transparent; border-color: var(--border); color: var(--text-2);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.btn-ghost {
+  background: transparent; border-color: transparent; color: var(--text-2);
+}
+.btn-ghost:hover { color: var(--text); background: var(--bg-hover); }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.74rem; }
+.btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.25); }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-xs { padding: 0.25rem 0.55rem; font-size: 0.7rem; border-radius: 4px; }
+.btn-accent2 { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(129,140,248,0.25); }
+.btn-accent2:hover { background: rgba(129,140,248,0.2); }
+.btn-amber { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.25); }
+.btn-red { background: var(--red-dim); color: var(--red); border-color: rgba(248,113,113,0.25); }
+.btn-emerald { background: var(--emerald-dim); color: var(--emerald); border-color: rgba(52,211,153,0.25); }
+.btn-block { display: block; width: 100%; text-align: center; justify-content: center; }
+
+/* ===== LOGIN OVERLAY ===== */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, rgba(5,10,20,0.97) 0%, rgba(8,16,36,0.97) 50%, rgba(5,10,20,0.97) 100%);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(20px);
+}
+.login-overlay.hidden { display: none; }
+.login-box {
+  width: 420px; padding: 2.5rem 2.2rem;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 0 60px rgba(52,211,153,0.08);
+  position: relative; overflow: hidden;
+}
+.login-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.login-logo { text-align: center; margin-bottom: 2rem; }
+.login-logo .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.login-logo h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+.login-logo p { font-size: 0.8rem; color: var(--text-3); }
+.login-form { display: flex; flex-direction: column; gap: 1rem; }
+.login-input {
+  width: 100%; padding: 0.75rem 1rem;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 0.9rem; font-family: inherit;
+  outline: none; transition: border-color 0.2s;
+}
+.login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+.login-input::placeholder { color: var(--text-3); }
+.login-btn {
+  width: 100%; padding: 0.75rem; background: var(--accent);
+  color: #050a14; border: none; border-radius: var(--radius-sm);
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.2s;
+}
+.login-btn:hover { filter: brightness(1.1); }
+.login-tip { text-align: center; font-size: 0.76rem; color: var(--text-3); margin-top: 0.5rem; }
+.login-error { color: #f87171; font-size: 0.8rem; text-align: center; min-height: 1.2em; }
+
+/* ===== SETTINGS HEADER BUTTON ===== */
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 12px var(--accent-dim); }
+
+/* ===== SETTINGS MODAL ===== */
+.settings-overlay {
+  position: fixed; inset: 0; z-index: 9980;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+}
+.settings-overlay.hidden { display: none; }
+.settings-dialog {
+  width: 720px; max-height: 85vh;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.settings-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border-faint); display: flex; align-items: center; justify-content: space-between; }
+.settings-header h3 { font-size: 1.1rem; font-weight: 700; }
+.settings-header .btn-icon { margin-left: auto; }
+.settings-body { display: flex; flex: 1; overflow: hidden; min-height: 400px; }
+.settings-nav { width: 180px; border-right: 1px solid var(--border-faint); padding: 0.8rem 0; background: var(--bg-elevated); display: flex; flex-direction: column; gap: 0.2rem; }
+.settings-nav-item { padding: 0.65rem 1.2rem; font-size: 0.84rem; color: var(--text-3); cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; }
+.settings-nav-item:hover { color: var(--text); background: var(--bg-hover); }
+.settings-nav-item.active { color: var(--accent); background: var(--accent-dim); border-left-color: var(--accent); font-weight: 600; }
+.settings-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+.settings-section { display: none; }
+.settings-section.active { display: block; }
+.settings-field { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 0; border-bottom: 1px solid var(--border-faint); }
+.settings-field:last-child { border-bottom: none; }
+.settings-field-label { color: var(--text-3); font-size: 0.84rem; }
+.settings-field-value { font-size: 0.86rem; color: var(--text); font-weight: 500; }
+.settings-field-right { display: flex; align-items: center; gap: 0.6rem; }
+.settings-danger { margin-top: 1.5rem; padding: 1rem; border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm); background: rgba(239,68,68,0.05); }
+.settings-danger h4 { color: #f87171; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.toggle-switch { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: all 0.25s; }
+.toggle-switch.on { background: var(--emerald); }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: all 0.25s; }
+.toggle-switch.on::after { left: 22px; }
+
+/* ===== CONTENT ===== */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.content {
+  flex:1; overflow-y: auto; overflow-x: hidden;
+  padding: 1.8rem 2rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  scroll-behavior: smooth;
+}
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== PAGES ===== */
+.page { display:none; flex-direction:column; gap:1.5rem; }
+.page.active { display:flex; animation: pageIn 350ms var(--ease) both; }
+@keyframes pageIn {
+  from { opacity:0; transform: translateY(10px); }
+  to { opacity:1; transform: translateY(0); }
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: all 200ms var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+.card:hover { border-color: var(--border-glow); }
+.card-glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-faint);
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.card-title { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
+.card-subtitle { font-size: 0.76rem; color: var(--text-3); }
+
+/* ===== KPI CARDS ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.3rem 1.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 200ms var(--ease-out);
+  cursor: default;
+}
+.kpi-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+.kpi-card::before {
+  content: ''; position: absolute; top: -40%; right: -20%;
+  width: 120px; height: 120px; border-radius: 50%;
+  opacity: 0.06; transition: opacity 300ms;
+}
+.kpi-card.accent::before { background: var(--accent); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.emerald::before { background: var(--emerald); }
+.kpi-card.accent2::before { background: var(--accent2); }
+.kpi-card:hover::before { opacity: 0.12; }
+.kpi-label { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.25rem; }
+.kpi-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin: 0.3rem 0 0.15rem; letter-spacing: -0.02em; line-height: 1.1; }
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.amber { color: var(--amber); }
+.kpi-value.emerald { color: var(--emerald); }
+.kpi-value.accent2 { color: var(--accent2); }
+.kpi-change { font-size: 0.76rem; color: var(--text-3); margin-top: 0.1rem; }
+.kpi-change.up { color: var(--emerald); }
+.kpi-change.down { color: var(--red); }
+
+/* ===== TABLES ===== */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+}
+table {
+  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+}
+th {
+  background: rgba(17,27,51,0.6);
+  padding: 0.65rem 1rem; text-align: left;
+  font-weight: 600; font-size: 0.72rem; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-faint); white-space: nowrap;
+}
+td {
+  padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-faint);
+  color: var(--text-2); white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(22,34,65,0.4); }
+td.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+td.strong { color: var(--text); font-weight: 500; }
+td.up { color: var(--emerald); }
+td.down { color: var(--red); }
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em;
+}
+.badge-active { background: var(--emerald-dim); color: var(--emerald); }
+.badge-pending { background: var(--amber-dim); color: var(--amber); }
+.badge-dormant { background: rgba(84,101,128,0.12); color: var(--text-3); }
+.badge-accent { background: var(--accent-dim); color: var(--accent); }
+.badge-accent2 { background: var(--accent2-dim); color: var(--accent2); }
+
+/* ===== CHARTS ===== */
+.chart-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.chart-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; }
+.chart-inner { height: 280px; }
+
+/* ===== GRID LAYOUTS ===== */
+.col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.col-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.col-21 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+.col-12 { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
+
+/* ===== TABS ===== */
+.tabs { display:flex; gap:0.2rem; margin-bottom:1.25rem; }
+.tab {
+  padding: 0.45rem 1.1rem; font-size: 0.82rem; font-weight: 600;
+  border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--text-3); border: 1px solid transparent;
+  transition: all 180ms var(--ease-out);
+}
+.tab:hover { color: var(--text-2); background: var(--bg-hover); }
+.tab.active { color: var(--accent); background: var(--accent-dim); border-color: rgba(52,211,153,0.15); }
+
+/* ===== FORMS ===== */
+.form-group { margin-bottom: 1rem; }
+.form-label { display:block; font-size:0.74rem; font-weight:600; color:var(--text-3); margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.05em; }
+.form-input, .form-select {
+  width: 100%; padding: 0.6rem 0.85rem;
+  background: var(--bg-root); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.84rem; transition: border-color 180ms; outline: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.form-input::placeholder { color: var(--text-3); }
+.form-select { cursor: pointer; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.form-hint { font-size:0.7rem; color:var(--text-3); margin-top:0.3rem; }
+
+/* ===== DATA/MODEL CARDS ===== */
+.data-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.data-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem;
+  transition: all 200ms var(--ease-out);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  display: flex; flex-direction: column; gap: 0.8rem;
+}
+.data-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(52,211,153,0.1);
+}
+.data-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0; transition: opacity 200ms;
+}
+.data-card:hover::before { opacity: 1; }
+.data-card-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+}
+.data-card-icon.data { background: var(--accent-dim); color: var(--accent); }
+.data-card-icon.model { background: var(--accent2-dim); color: var(--accent2); }
+.data-card-name { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
+.data-card-meta { font-size: 0.76rem; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.data-card-meta span { display: flex; align-items: center; gap: 0.25rem; }
+.data-card-price { font-size: 1.3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+.data-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+.data-card-rating { color: var(--amber); font-size: 0.8rem; }
+.data-card-provider { font-size: 0.76rem; color: var(--text-3); }
+
+/* ===== SEARCH BAR ===== */
+.search-bar {
+  display: flex; gap: 0.75rem; align-items: center;
+}
+.search-input-wrap {
+  flex: 1; position: relative;
+}
+.search-input-wrap .search-icon {
+  position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); font-size: 0.9rem;
+}
+.search-input {
+  width: 100%; padding: 0.6rem 0.85rem 0.6rem 2.3rem;
+  background: var(--bg-root);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.84rem;
+  transition: border-color 180ms;
+  outline: none;
+}
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.search-input::placeholder { color: var(--text-3); }
+
+/* ===== FILTER CHIPS ===== */
+.filter-chips {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+}
+.chip {
+  padding: 0.35rem 0.8rem; border-radius: 20px;
+  font-size: 0.76rem; font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  background: transparent;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--text-2); color: var(--text-2); }
+.chip.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+/* ===== TOKEN CARD ===== */
+.token-card {
+  background: linear-gradient(135deg, rgba(52,211,153,0.08), rgba(5,6,20,0.6));
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: var(--radius-lg);
+  padding: 1.8rem;
+  position: relative;
+  overflow: hidden;
+}
+.token-card::before {
+  content: ''; position: absolute; top: -60%; right: -20%;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(52,211,153,0.15), transparent);
+  pointer-events: none;
+}
+.token-balance { font-size: 3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+.token-balance-label { font-size: 0.78rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+.token-equivalent { font-size: 0.82rem; color: var(--text-2); margin-top: 0.4rem; }
+
+/* ===== MEMBERSHIP CARDS ===== */
+.membership-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.membership-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 200ms var(--ease-out);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.membership-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+.membership-card.active-plan {
+  border-color: var(--accent);
+  background: rgba(52,211,153,0.05);
+}
+.membership-card.active-plan::after {
+  content: '当前'; position: absolute; top: 0.5rem; right: 0.5rem;
+  padding: 0.15rem 0.5rem; border-radius: 8px;
+  font-size: 0.65rem; font-weight: 600;
+  background: var(--accent); color: #050a14;
+}
+.membership-card .plan-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.membership-card .plan-price { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); margin-bottom: 0.3rem; }
+.membership-card .plan-per { font-size: 0.72rem; color: var(--text-3); }
+.membership-card .plan-features { font-size: 0.76rem; color: var(--text-2); margin-top: 0.8rem; line-height: 1.6; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display:none;
+  position:fixed; inset:0;
+  background: rgba(5,10,20,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  align-items:center; justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  width: 500px; max-width: 90vw;
+  max-height: 80vh; overflow-y: auto;
+  animation: modalIn 280ms var(--ease) both;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(16px) scale(0.96); }
+  to { opacity:1; transform: translateY(0) scale(1); }
+}
+.modal h3 { font-size:1.15rem; margin-bottom:1.5rem; font-weight: 700; }
+.modal-actions { display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.8rem; }
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed; top: 1rem; right: 1rem; z-index: 200;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.toast {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius);
+  padding: 0.8rem 1.2rem;
+  font-size: 0.84rem; font-weight: 500;
+  display: flex; align-items: center; gap: 0.6rem;
+  animation: toastIn 300ms var(--ease) both;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  max-width: 380px;
+}
+@keyframes toastIn {
+  from { opacity:0; transform: translateX(40px); }
+  to { opacity:1; transform: translateX(0); }
+}
+.toast.success { border-color: rgba(52,211,153,0.4); }
+.toast.success .toast-icon { color: var(--emerald); }
+.toast.info { border-color: rgba(52,211,153,0.4); }
+.toast.info .toast-icon { color: var(--accent); }
+.toast.warning { border-color: rgba(245,158,11,0.4); }
+.toast.warning .toast-icon { color: var(--amber); }
+
+/* ===== REVENUE DISTRIBUTION ===== */
+.revenue-bars { width: 100%; display: flex; flex-direction: column; gap: 0.7rem; }
+.revenue-bar-row { display: flex; align-items: center; gap: 0.7rem; }
+.revenue-bar-label { width: 80px; font-size: 0.78rem; font-weight: 600; color: var(--text-2); text-align: right; }
+.revenue-bar-track { flex:1; height: 12px; background: var(--bg-root); border-radius: 6px; overflow: hidden; }
+.revenue-bar-fill { height: 100%; border-radius: 6px; transition: width 600ms var(--ease); }
+.revenue-bar-fill.owner { background: linear-gradient(90deg, var(--accent), #059669); }
+.revenue-bar-fill.endorser { background: linear-gradient(90deg, var(--accent2), #6366f1); }
+.revenue-bar-fill.bank { background: linear-gradient(90deg, var(--amber), #d97706); }
+.revenue-bar-amount { width: 90px; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; color: var(--text); text-align: right; }
+.revenue-bar-pct { width: 45px; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--text-3); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .data-card-grid { grid-template-columns: repeat(2, 1fr); }
+  .membership-grid { grid-template-columns: repeat(2, 1fr); }
+  .col-2, .col-21, .col-12 { grid-template-columns: 1fr; }
+  .col-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .data-card-grid { grid-template-columns: 1fr; }
+  .membership-grid { grid-template-columns: 1fr; }
+  .col-3 { grid-template-columns: 1fr; }
+  .content { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">◈</div>
+      <h2>DataBank 数据交易平台</h2>
+      <p>数据使用者入口 · 登录即注册</p>
+    </div>
+    <form class="login-form" onsubmit="handleLogin(event)">
+      <input class="login-input" type="text" id="loginId" placeholder="手机号 / 邮箱 / 用户名" required autocomplete="username">
+      <input class="login-input" type="password" id="loginPassword" placeholder="登录密码" required autocomplete="current-password">
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" type="submit">登录 / 注册</button>
+      <div class="login-tip">链上数据交易 · Token 结算 · 隐私守护</div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div class="settings-overlay hidden" id="settingsOverlay">
+  <div class="settings-dialog">
+    <div class="settings-header">
+      <h3>⚙ 系统设置</h3>
+      <button class="btn-icon" onclick="closeSettings()" title="关闭">✕</button>
+    </div>
+    <div class="settings-body">
+      <nav class="settings-nav" id="settingsNav">
+        <div class="settings-nav-item active" data-settings="security">账号安全</div>
+        <div class="settings-nav-item" data-settings="tx-password">交易密码</div>
+        <div class="settings-nav-item" data-settings="devices">安全设备</div>
+        <div class="settings-nav-item" data-settings="auth">授权认证</div>
+        <div class="settings-nav-item" data-settings="protocol">协议管理</div>
+        <div class="settings-nav-item" data-settings="help">帮助中心</div>
+        <div class="settings-nav-item" data-settings="about">关于系统</div>
+      </nav>
+      <div class="settings-content">
+        <div class="settings-section active" id="sett-security">
+          <div class="settings-field"><span class="settings-field-label">登录账号</span><span class="settings-field-value" id="sett-account">—</span></div>
+          <div class="settings-field"><span class="settings-field-label">登录密码</span><span class="settings-field-right"><span class="settings-field-value">••••••••</span><button class="btn btn-outline btn-sm" onclick="showToast('info','密码修改功能将在 v2.0 上线')">修改</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">双重认证 (2FA)</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">生物识别登录</span><span class="settings-field-right"><span class="toggle-switch" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">账号注册时间</span><span class="settings-field-value mono">2026-06-16 09:30:00</span></div>
+          <div class="settings-danger"><h4>账户删除</h4><p style="font-size:0.78rem;color:var(--text-3);">删除后所有关联数据与交易记录将永久丢失。</p><button class="btn btn-danger btn-sm" onclick="showToast('warning','请联系银行管理员执行账户删除')" style="margin-top:0.5rem;">注销账户</button></div>
+        </div>
+        <div class="settings-section" id="sett-tx-password">
+          <div class="settings-field"><span class="settings-field-label">交易密码状态</span><span class="settings-field-value" style="color:var(--emerald);">已设置</span></div>
+          <div class="settings-field"><span class="settings-field-label">修改交易密码</span><span class="settings-field-right"><input class="form-input" type="password" placeholder="输入新密码" style="width:180px;"><button class="btn btn-outline btn-sm">确认</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">交易免密额度</span><span class="settings-field-right"><select class="form-select" style="width:140px;"><option>100 Token</option><option selected>500 Token</option><option>1,000 Token</option><option>关闭免密</option></select></span></div>
+          <div class="settings-field"><span class="settings-field-label">大额交易二次确认</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">单日充值限额</span><span class="settings-field-right"><input class="form-input" type="number" value="50000" style="width:120px;"><span style="font-size:0.78rem;color:var(--text-3);">Token</span></span></div>
+        </div>
+        <div class="settings-section" id="sett-devices">
+          <div class="settings-field"><span class="settings-field-label">当前设备</span><span class="settings-field-value" style="color:var(--emerald);">Windows 11 Pro · Chrome · ✗ 当前</span></div>
+          <div class="settings-field"><span class="settings-field-label">设备-001</span><span class="settings-field-value">MacBook Pro · Safari · 深圳 · 2026-06-12</span></div>
+          <div class="settings-field"><span class="settings-field-label">新设备登录验证</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">设备踢出</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">移除其他设备</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-auth">
+          <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:1rem;">管理已授权的数据平台与API访问权限</p>
+          <div class="settings-field"><span class="settings-field-label">DataBank 官方 App</span><span class="settings-field-right"><span class="settings-field-value">已授权 · 2026-06-10</span><button class="btn btn-outline btn-sm">撤销</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">银行用户平台联动</span><span class="settings-field-right"><span class="settings-field-value">已授权 · 2026-06-16</span><button class="btn btn-outline btn-sm">撤销</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">数据下载密钥</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">生成新密钥</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-protocol">
+          <div class="settings-field"><span class="settings-field-label">数据使用协议 v2.1</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">数据购买协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">模型使用协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">Token 充值协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">隐私政策 v3.2</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">协议变更通知</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">查看更新</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-help">
+          <p style="font-size:0.84rem;color:var(--text-2);margin-bottom:1rem;">常见问题与帮助资源</p>
+          <div class="settings-field"><span class="settings-field-label">📖 用户操作指南</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">在线阅读</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">🎬 视频教程</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">观看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">❓ 常见问题 FAQ</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">💬 在线客服</span><span class="settings-field-right"><button class="btn btn-primary btn-sm">联系客服</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">🐛 问题反馈</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">提交工单</button></span></div>
+        </div>
+        <div class="settings-section" id="sett-about">
+          <div class="settings-field"><span class="settings-field-label">平台版本</span><span class="settings-field-value mono">数据交易平台 v0.2.0-beta</span></div>
+          <div class="settings-field"><span class="settings-field-label">底层链</span><span class="settings-field-value">Substrate 联盟链 v1.3.0</span></div>
+          <div class="settings-field"><span class="settings-field-label">Token 合约</span><span class="settings-field-value">ERC-20 兼容 · 1 Token = 0.01 CNY</span></div>
+          <div class="settings-field"><span class="settings-field-label">隐私计算</span><span class="settings-field-value">TEE (Intel SGX) v0.5-beta</span></div>
+          <div class="settings-field"><span class="settings-field-label">数据安全</span><span class="settings-field-value" style="color:var(--emerald);">端到端加密 · 同态计算</span></div>
+          <div class="settings-field"><span class="settings-field-label">开发团队</span><span class="settings-field-value">DataBank Engineering © 2026</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scanline"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">◈</div>
+    <div>
+      <div class="brand-text">DataBank</div>
+      <div class="brand-ver">银行数据交易平台</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">市场</div>
+    <div class="nav-item active" data-page="market">
+      <span class="nav-icon">◉</span> 数据市场
+      <span class="nav-badge">热</span>
+    </div>
+    <div class="nav-item" data-page="models">
+      <span class="nav-icon">◎</span> 模型市场
+      <span class="nav-badge" style="background:var(--accent2-dim);color:var(--accent2)">新</span>
+    </div>
+    <div class="nav-section">我的资产</div>
+    <div class="nav-item" data-page="my-data">
+      <span class="nav-icon">▣</span> 我的数据
+      <span class="nav-badge">5</span>
+    </div>
+    <div class="nav-item" data-page="my-models">
+      <span class="nav-icon">◆</span> 我的模型
+      <span class="nav-badge" style="background:var(--accent2-dim);color:var(--accent2)">3</span>
+    </div>
+    <div class="nav-section">合作</div>
+    <div class="nav-item" data-page="wealth-collab">
+      <span class="nav-icon">⬡</span> 数据理财合作
+    </div>
+    <div class="nav-section">账户</div>
+    <div class="nav-item" data-page="token">
+      <span class="nav-icon">◇</span> Token与会员
+    </div>
+    <div class="nav-item" data-page="transactions">
+      <span class="nav-icon">☰</span> 交易记录
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip" onclick="openSettings()" style="cursor:pointer;">
+      <div class="user-avatar">DU</div>
+      <div class="user-info">
+        <div class="user-name">张明</div>
+        <div class="user-role">数据使用者</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+  <header class="topbar">
+    <span class="page-title" id="pageTitle">数据市场</span>
+    <span class="breadcrumb">/ <span id="breadcrumbPage">数据市场</span></span>
+    <div class="topbar-actions">
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span class="live-text">区块 <span class="live-block">#847,291</span></span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="showToast('info','系统运行正常')">Ping</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== PAGE 1: DATA MARKET ===== -->
+    <div class="page active" id="page-market">
+      <div class="card">
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon">&#x1F50D;</span>
+            <input class="search-input" type="text" placeholder="搜索数据产品、类型、提供方..." id="dataSearch" oninput="filterDataCards()">
+          </div>
+          <button class="btn btn-primary btn-sm">搜索</button>
+        </div>
+        <div class="filter-chips" style="margin-top:1rem;" id="filterChips">
+          <span style="font-size:0.72rem;color:var(--text-3);line-height:2rem;margin-right:0.25rem;">筛选:</span>
+          <span class="chip active" onclick="toggleChip(this,'industry')">全部行业</span>
+          <span class="chip" onclick="toggleChip(this,'industry')">健康医疗</span>
+          <span class="chip" onclick="toggleChip(this,'industry')">设备制造</span>
+          <span class="chip" onclick="toggleChip(this,'industry')">消费零售</span>
+          <span class="chip" onclick="toggleChip(this,'industry')">新能源</span>
+          <span class="chip" onclick="toggleChip(this,'industry')">临床试验</span>
+          <span style="font-size:0.72rem;color:var(--text-3);line-height:2rem;margin:0 0.25rem;">|</span>
+          <span class="chip active" onclick="toggleChip(this,'type')">全部类型</span>
+          <span class="chip" onclick="toggleChip(this,'type')">个人数据</span>
+          <span class="chip" onclick="toggleChip(this,'type')">企业数据</span>
+          <span class="chip" onclick="toggleChip(this,'type')">设备数据</span>
+          <span style="font-size:0.72rem;color:var(--text-3);line-height:2rem;margin:0 0.25rem;">|</span>
+          <span class="chip active" onclick="toggleChip(this,'price')">全部价格</span>
+          <span class="chip" onclick="toggleChip(this,'price')">&lt; 500T</span>
+          <span class="chip" onclick="toggleChip(this,'price')">500-1000T</span>
+          <span class="chip" onclick="toggleChip(this,'price')">1000-5000T</span>
+          <span class="chip" onclick="toggleChip(this,'price')">&gt; 5000T</span>
+        </div>
+      </div>
+
+      <div class="data-card-grid" id="dataCardGrid">
+        <!-- Card 1 -->
+        <div class="data-card" data-industry="健康医疗" data-type="个人数据" data-price="500">
+          <div class="data-card-icon data">&#x1F3E5;</div>
+          <div class="data-card-name">个人健康数据</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 2.4 GB</span><span>&#x1F4CA; 健康医疗</span><span>&#x1F465; 个人</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.2</div>
+          <div class="data-card-price">500 T</div>
+          <div class="data-card-provider">提供方: Apple Health 认证</div>
+          <div class="data-card-footer">
+            <span class="badge badge-accent">可购买</span>
+            <button class="btn btn-primary btn-sm" onclick="showToast('success','已下单: 个人健康数据 (500 Token)')">购买</button>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="data-card" data-industry="设备制造" data-type="企业数据" data-price="2000">
+          <div class="data-card-icon data">&#x2699;</div>
+          <div class="data-card-name">企业设备运行数据</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 18.7 GB</span><span>&#x1F4CA; 设备制造</span><span>&#x1F3ED; 企业</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; 4.8</div>
+          <div class="data-card-price">2,000 T</div>
+          <div class="data-card-provider">提供方: 某制造企业</div>
+          <div class="data-card-footer">
+            <span class="badge badge-accent">可购买</span>
+            <button class="btn btn-primary btn-sm" onclick="showToast('success','已下单: 企业设备运行数据 (2,000 Token)')">购买</button>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="data-card" data-industry="消费零售" data-type="个人数据" data-price="800">
+          <div class="data-card-icon data">&#x1F6CD;</div>
+          <div class="data-card-name">消费行为数据</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 8.1 GB</span><span>&#x1F4CA; 消费零售</span><span>&#x1F465; 个人</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.0</div>
+          <div class="data-card-price">800 T</div>
+          <div class="data-card-provider">提供方: 零售联盟</div>
+          <div class="data-card-footer">
+            <span class="badge badge-accent">可购买</span>
+            <button class="btn btn-primary btn-sm" onclick="showToast('success','已下单: 消费行为数据 (800 Token)')">购买</button>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="data-card" data-industry="临床试验" data-type="企业数据" data-price="5000">
+          <div class="data-card-icon data">&#x1F48A;</div>
+          <div class="data-card-name">临床试验数据</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 15 GB</span><span>&#x1F4CA; 临床试验</span><span>&#x1F3ED; 企业</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; 4.9</div>
+          <div class="data-card-price">5,000 T</div>
+          <div class="data-card-provider">提供方: 某药企研究中心</div>
+          <div class="data-card-footer">
+            <span class="badge badge-accent">可购买</span>
+            <button class="btn btn-primary btn-sm" onclick="showToast('success','已下单: 临床试验数据 (5,000 Token)')">购买</button>
+          </div>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="data-card" data-industry="新能源" data-type="设备数据" data-price="3000">
+          <div class="data-card-icon data">&#x1F698;</div>
+          <div class="data-card-name">新能源车续航数据</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 22 GB</span><span>&#x1F4CA; 新能源</span><span>&#x1F527; 设备</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.5</div>
+          <div class="data-card-price">3,000 T</div>
+          <div class="data-card-provider">提供方: 某新能源车企</div>
+          <div class="data-card-footer">
+            <span class="badge badge-accent">可购买</span>
+            <button class="btn btn-primary btn-sm" onclick="showToast('success','已下单: 新能源车续航数据 (3,000 Token)')">购买</button>
+          </div>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="data-card" data-industry="消费零售" data-type="企业数据" data-price="1500">
+          <div class="data-card-icon data">&#x1F4CA;</div>
+          <div class="data-card-name">零售POS交易数据</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 30 GB</span><span>&#x1F4CA; 消费零售</span><span>&#x1F3ED; 企业</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2606;&#x2606; 3.8</div>
+          <div class="data-card-price">1,500 T</div>
+          <div class="data-card-provider">提供方: 连锁超市联盟</div>
+          <div class="data-card-footer">
+            <span class="badge badge-accent">可购买</span>
+            <button class="btn btn-primary btn-sm" onclick="showToast('success','已下单: 零售POS交易数据 (1,500 Token)')">购买</button>
+          </div>
+        </div>
+
+        <!-- 运动数据商品 1 -->
+        <div class="data-card" style="border:1px solid rgba(52,211,153,0.2);">
+          <div class="data-card-icon">&#x1F3C3;</div>
+          <div class="data-card-name">跑步全维度训练数据包</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 125 GB</span><span>Token/GB: 350</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; 4.8</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">提供方: 200+ 跑者</div>
+          <div style="font-size:0.72rem;color:var(--text-2);margin-top:0.25rem;">含: 心率/呼吸/发力/受力/姿态/环境 10维度</div>
+          <div style="font-size:0.7rem;color:var(--accent);">授权: 下载分析 | 鉴权: Garmin+Strava</div>
+          <div class="data-card-footer">
+            <span class="mono" style="font-size:0.85rem;font-weight:700;color:var(--accent);">43,750 T</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','跑步全维度训练数据包已加入购物车')">立即获取</button>
+          </div>
+        </div>
+
+        <!-- 运动数据商品 2 -->
+        <div class="data-card">
+          <div class="data-card-icon">&#x1F6B4;</div>
+          <div class="data-card-name">骑行功率训练数据集</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 68 GB</span><span>Token/GB: 250</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.5</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">提供方: 80+ 骑行者</div>
+          <div style="font-size:0.72rem;color:var(--text-2);margin-top:0.25rem;">含: FTP/功率曲线/踏频/姿态/环境 5维度</div>
+          <div style="font-size:0.7rem;color:var(--accent);">授权: 下载分析 | 鉴权: Garmin+Wahoo</div>
+          <div class="data-card-footer">
+            <span class="mono" style="font-size:0.85rem;font-weight:700;color:var(--accent);">17,000 T</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','骑行功率训练数据集已加入购物车')">立即获取</button>
+          </div>
+        </div>
+
+        <!-- 运动数据商品 3 -->
+        <div class="data-card">
+          <div class="data-card-icon">&#x1F4AA;</div>
+          <div class="data-card-name">健身动作EMG数据集</div>
+          <div class="data-card-meta">
+            <span>&#x1F4E6; 42 GB</span><span>Token/GB: 400</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.3</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">提供方: 50+ 健身者</div>
+          <div style="font-size:0.72rem;color:var(--text-2);margin-top:0.25rem;">含: 3D动作轨迹/EMG肌电/力量曲线/肌肉对称性</div>
+          <div style="font-size:0.7rem;color:var(--accent);">授权: 下载分析 | 鉴权: Tonal+Keep</div>
+          <div class="data-card-footer">
+            <span class="mono" style="font-size:0.85rem;font-weight:700;color:var(--accent);">16,800 T</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','健身动作EMG数据集已加入购物车')">立即获取</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 2: MODEL MARKET ===== -->
+    <div class="page" id="page-models">
+      <div class="card">
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon">&#x1F50D;</span>
+            <input class="search-input" type="text" placeholder="搜索分析模型、适用场景...">
+          </div>
+          <button class="btn btn-accent2 btn-sm">搜索</button>
+        </div>
+        <div class="filter-chips" style="margin-top:1rem;">
+          <span style="font-size:0.72rem;color:var(--text-3);line-height:2rem;margin-right:0.25rem;">分类:</span>
+          <span class="chip active" onclick="toggleChip(this,'model')">全部</span>
+          <span class="chip" onclick="toggleChip(this,'model')">用户分析</span>
+          <span class="chip" onclick="toggleChip(this,'model')">设备预测</span>
+          <span class="chip" onclick="toggleChip(this,'model')">风险评估</span>
+          <span class="chip" onclick="toggleChip(this,'model')">数据处理</span>
+          <span class="chip" onclick="toggleChip(this,'model')">运动健康</span>
+        </div>
+      </div>
+
+      <div class="data-card-grid">
+        <!-- Model 1 -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F465;</div>
+          <div class="data-card-name">用户画像模型</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 10 T/h</span><span>&#x1F3AF; 用户分析</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.3</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 消费行为、社交媒体</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">要求: 结构化用户标签数据</div>
+          <div class="data-card-footer">
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 用户画像模型')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 2 -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x2699;</div>
+          <div class="data-card-name">设备故障预测</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 50 T/h</span><span>&#x1F3AF; 设备预测</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; 4.7</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 产线传感器、设备日志</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">要求: 时序传感器数据</div>
+          <div class="data-card-footer">
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 设备故障预测')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 3 -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F4C8;</div>
+          <div class="data-card-name">消费倾向评分</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 50 T/h</span><span>&#x1F3AF; 用户分析</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.1</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: POS交易、电商浏览</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">要求: 用户消费记录数据</div>
+          <div class="data-card-footer">
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 消费倾向评分')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 4 -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F3E5;</div>
+          <div class="data-card-name">健康风险评估</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 200 T/h</span><span>&#x1F3AF; 风险评估</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; 4.9</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 可穿戴设备、体检数据</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">要求: 多维度体征数据</div>
+          <div class="data-card-footer">
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 健康风险评估')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 5 -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F512;</div>
+          <div class="data-card-name">数据脱敏模型</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 30 T/h</span><span>&#x1F3AF; 数据处理</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.4</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 隐私敏感数据预处理</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">要求: 任意结构化数据集</div>
+          <div class="data-card-footer">
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 数据脱敏模型')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 5: 跑步训练模型 — NEW -->
+        <div class="data-card" style="border:1px solid rgba(0,212,255,0.25);">
+          <div class="data-card-icon model">&#x1F3C3;</div>
+          <div class="data-card-name">跑步训练个性化模型</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 500 T/次</span><span>&#x1F3AF; 运动分析</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; 4.8</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 跑步全维度数据（10维）</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">输入: 身高/体重/跑龄/PB/目标 → 输出: 个性化训练方案+配速曲线+姿态建议</div>
+          <div style="font-size:0.72rem;color:var(--accent);margin-top:0.25rem;">&#x26A1; 支持方案下载导入Garmin/Coros/Apple Watch</div>
+          <div class="data-card-footer">
+            <span style="font-size:0.7rem;color:var(--text-3);">500 Token（约¥5.00）</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 跑步训练个性化模型 — 方案已生成，可下载导入外设')">购买 & 生成方案</button>
+          </div>
+        </div>
+
+        <!-- Model 6: 游泳训练模型 — NEW -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F3CA;</div>
+          <div class="data-card-name">游泳技术分析模型</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 400 T/次</span><span>&#x1F3AF; 运动分析</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.5</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 泳姿效率(SWOLF)/划频/转身数据</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">输出: 泳姿改善方案+训练计划+转身优化</div>
+          <div class="data-card-footer">
+            <span style="font-size:0.7rem;color:var(--text-3);">400 Token（约¥4.00）</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 游泳技术分析模型')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 7: 骑行训练模型 — NEW -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F6B4;</div>
+          <div class="data-card-name">骑行功率训练模型</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 450 T/次</span><span>&#x1F3AF; 运动分析</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.6</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: FTP/功率曲线/踏频/骑行姿态</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">输出: 功率训练计划+FTP提升方案+骑行姿态优化</div>
+          <div class="data-card-footer">
+            <span style="font-size:0.7rem;color:var(--text-3);">450 Token（约¥4.50）</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 骑行功率训练模型')">购买使用</button>
+          </div>
+        </div>
+
+        <!-- Model 8: 健身动作分析模型 — NEW -->
+        <div class="data-card">
+          <div class="data-card-icon model">&#x1F4AA;</div>
+          <div class="data-card-name">健身动作分析模型</div>
+          <div class="data-card-meta">
+            <span>&#x23F1; 350 T/次</span><span>&#x1F3AF; 运动分析</span>
+          </div>
+          <div class="data-card-rating">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; 4.4</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">适用: 动作轨迹(3D)/肌电信号(EMG)/力量曲线</div>
+          <div style="font-size:0.76rem;color:var(--text-3);">输出: 个性化训练计划+动作纠正+肌肉平衡分析</div>
+          <div class="data-card-footer">
+            <span style="font-size:0.7rem;color:var(--text-3);">350 Token（约¥3.50）</span>
+            <button class="btn btn-accent2 btn-sm" onclick="showToast('success','模型已开通: 健身动作分析模型')">购买使用</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 3: MY DATA ===== -->
+    <div class="page" id="page-my-data">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">已购买数据集</div><div class="kpi-value accent">5</div><div class="kpi-change">总数据量 86.2 GB</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">有效期内</div><div class="kpi-value emerald">4</div><div class="kpi-change">1 项即将到期</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">累计使用次数</div><div class="kpi-value amber">142</div><div class="kpi-change">本月 28 次</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">Token 消费</div><div class="kpi-value accent2">11,300</div><div class="kpi-change down">占总额 45.2%</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">我的数据列表</span>
+          <div style="display:flex;gap:0.5rem;">
+            <select class="form-select" style="width:auto;" onchange="sortDataTable(this.value)">
+              <option value="date">按购买日期</option>
+              <option value="name">按名称</option>
+              <option value="expiry">按有效期</option>
+              <option value="usage">按使用次数</option>
+            </select>
+            <button class="btn btn-outline btn-sm">筛选</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>数据名称</th><th>购买日期</th><th>有效期至</th><th>剩余天数</th><th>使用次数</th><th>数据量</th><th>花费</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="strong">个人健康数据</td><td class="mono">2026-06-10</td><td class="mono">2026-12-10</td><td class="mono" style="color:var(--emerald);">177天</td><td class="mono">38</td><td class="mono">2.4 GB</td><td class="mono">500 T</td><td><span class="badge badge-active">有效</span></td><td><button class="btn btn-emerald btn-xs" onclick="showToast('success','开始下载: 个人健康数据')">下载</button></td>
+              </tr>
+              <tr>
+                <td class="strong">企业设备运行数据</td><td class="mono">2026-05-22</td><td class="mono">2026-11-22</td><td class="mono" style="color:var(--emerald);">159天</td><td class="mono">52</td><td class="mono">18.7 GB</td><td class="mono">2,000 T</td><td><span class="badge badge-active">有效</span></td><td><button class="btn btn-emerald btn-xs" onclick="showToast('success','开始下载: 企业设备运行数据')">下载</button></td>
+              </tr>
+              <tr>
+                <td class="strong">消费行为数据</td><td class="mono">2026-04-15</td><td class="mono">2026-10-15</td><td class="mono" style="color:var(--emerald);">121天</td><td class="mono">29</td><td class="mono">8.1 GB</td><td class="mono">800 T</td><td><span class="badge badge-active">有效</span></td><td><button class="btn btn-emerald btn-xs" onclick="showToast('success','开始下载: 消费行为数据')">下载</button></td>
+              </tr>
+              <tr>
+                <td class="strong">新能源车续航数据</td><td class="mono">2026-03-08</td><td class="mono">2026-09-08</td><td class="mono" style="color:var(--amber);">84天</td><td class="mono">18</td><td class="mono">22 GB</td><td class="mono">3,000 T</td><td><span class="badge badge-active">有效</span></td><td><button class="btn btn-emerald btn-xs" onclick="showToast('success','开始下载: 新能源车续航数据')">下载</button></td>
+              </tr>
+              <tr>
+                <td class="strong">临床试验数据</td><td class="mono">2026-01-20</td><td class="mono">2026-07-20</td><td class="mono" style="color:var(--red);">34天</td><td class="mono">5</td><td class="mono">15 GB</td><td class="mono">5,000 T</td><td><span class="badge badge-pending">即将到期</span></td><td><button class="btn btn-emerald btn-xs" onclick="showToast('warning','数据即将到期，请尽快使用')">下载</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">使用记录</span><button class="btn btn-ghost btn-xs">全部</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>时间</th><th>数据集</th><th>操作</th><th>用量</th><th>模型</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">2026-06-15 14:32</td><td class="strong">企业设备运行数据</td><td>模型分析</td><td class="mono">2.1 GB</td><td class="strong">设备故障预测</td></tr>
+              <tr><td class="mono">2026-06-15 10:18</td><td class="strong">个人健康数据</td><td>数据下载</td><td class="mono">0.5 GB</td><td>—</td></tr>
+              <tr><td class="mono">2026-06-14 16:45</td><td class="strong">消费行为数据</td><td>模型分析</td><td class="mono">3.2 GB</td><td class="strong">消费倾向评分</td></tr>
+              <tr><td class="mono">2026-06-14 09:30</td><td class="strong">个人健康数据</td><td>模型分析</td><td class="mono">0.8 GB</td><td class="strong">健康风险评估</td></tr>
+              <tr><td class="mono">2026-06-13 11:02</td><td class="strong">新能源车续航数据</td><td>数据浏览</td><td class="mono">0.1 GB</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 4: MY MODELS ===== -->
+    <div class="page" id="page-my-models">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">已购买模型</div><div class="kpi-value accent">3</div><div class="kpi-change">累计运行 67 次</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">本月 Token 消耗</div><div class="kpi-value emerald">2,840</div><div class="kpi-change up">↑ 较上月 +18%</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">运行成功率</div><div class="kpi-value amber">96.4%</div><div class="kpi-change">3 次失败 / 67 次</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">处理数据总量</div><div class="kpi-value accent2">48.2GB</div><div class="kpi-change">平均 0.72GB/次</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">我的模型列表</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>模型名称</th><th>Token/h</th><th>运行次数</th><th>累计Token</th><th>最近运行</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="strong">设备故障预测</td><td class="mono">50 T/h</td><td class="mono">28</td><td class="mono">1,400 T</td><td class="mono">2026-06-15 14:32</td><td><span class="badge badge-active">就绪</span></td><td><button class="btn btn-accent2 btn-xs" onclick="openModal('run-model')">运行</button></td>
+              </tr>
+              <tr>
+                <td class="strong">消费倾向评分</td><td class="mono">50 T/h</td><td class="mono">22</td><td class="mono">1,100 T</td><td class="mono">2026-06-14 16:45</td><td><span class="badge badge-active">就绪</span></td><td><button class="btn btn-accent2 btn-xs" onclick="openModal('run-model')">运行</button></td>
+              </tr>
+              <tr>
+                <td class="strong">健康风险评估</td><td class="mono">200 T/h</td><td class="mono">17</td><td class="mono">3,400 T</td><td class="mono">2026-06-14 09:30</td><td><span class="badge badge-active">就绪</span></td><td><button class="btn btn-accent2 btn-xs" onclick="openModal('run-model')">运行</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">运行历史</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>运行ID</th><th>模型</th><th>数据源</th><th>开始时间</th><th>耗时</th><th>Token</th><th>结果</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RUN-067</td><td class="strong">设备故障预测</td><td>企业设备运行数据</td><td class="mono">06-15 14:32</td><td class="mono">28min</td><td class="mono">23 T</td><td><span class="badge badge-active">成功</span></td></tr>
+              <tr><td class="mono">RUN-066</td><td class="strong">消费倾向评分</td><td>消费行为数据</td><td class="mono">06-14 16:45</td><td class="mono">64min</td><td class="mono">53 T</td><td><span class="badge badge-active">成功</span></td></tr>
+              <tr><td class="mono">RUN-065</td><td class="strong">健康风险评估</td><td>个人健康数据</td><td class="mono">06-14 09:30</td><td class="mono">12min</td><td class="mono">40 T</td><td><span class="badge badge-active">成功</span></td></tr>
+              <tr><td class="mono">RUN-064</td><td class="strong">设备故障预测</td><td>企业设备运行数据</td><td class="mono">06-13 08:15</td><td class="mono">35min</td><td class="mono">29 T</td><td><span class="badge badge-pending">失败</span></td></tr>
+              <tr><td class="mono">RUN-063</td><td class="strong">消费倾向评分</td><td>消费行为数据</td><td class="mono">06-12 15:00</td><td class="mono">58min</td><td class="mono">48 T</td><td><span class="badge badge-active">成功</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 5: WEALTH COLLABORATION ===== -->
+    <div class="page" id="page-wealth-collab">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">活跃合作项目</div><div class="kpi-value accent">2</div><div class="kpi-change">预期收益 8,500 T</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">累计分润</div><div class="kpi-value emerald">12,400</div><div class="kpi-change up">↑ 本月 +3,200 T</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">进行中</div><div class="kpi-value amber">2</div><div class="kpi-change">1 项待审核</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">合作方数量</div><div class="kpi-value accent2">3</div><div class="kpi-change">覆盖 3 个行业</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">发起数据理财合作</span></div>
+        <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:1.2rem;">选择您拥有的数据与银行合作推出理财包，按数据使用量获得分润收益。</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">选择数据源</label>
+            <select class="form-select">
+              <option>个人健康数据 (2.4 GB)</option>
+              <option>企业设备运行数据 (18.7 GB)</option>
+              <option>消费行为数据 (8.1 GB)</option>
+              <option>新能源车续航数据 (22 GB)</option>
+              <option>临床试验数据 (15 GB)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">理财包名称</label>
+            <input class="form-input" placeholder="如：健康数据季度理财包">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">锁定期限</label>
+            <select class="form-select">
+              <option>3 个月 — 预期年化 10%</option>
+              <option selected>6 个月 — 预期年化 15%</option>
+              <option>12 个月 — 预期年化 20%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Token/GB 定价</label>
+            <input class="form-input" type="number" value="500" placeholder="500">
+          </div>
+        </div>
+        <div class="form-hint" style="margin-bottom:0.75rem;">
+          <strong>分润比例:</strong> 数据所有方 70% | 鉴权方 15% | 银行 15%
+        </div>
+        <button class="btn btn-primary" onclick="showToast('success','理财合作已发起，等待银行审核')">发起合作</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">活跃合作项目</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>项目名称</th><th>数据源</th><th>锁定期</th><th>定价</th><th>下载量</th><th>累计分润</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="strong">健康数据季度理财</td><td>个人健康数据</td><td class="mono">6个月</td><td class="mono">500 T/GB</td><td class="mono">18 GB</td><td class="mono up">6,300 T</td><td><span class="badge badge-active">运行中</span></td>
+              </tr>
+              <tr>
+                <td class="strong">设备数据年度理财</td><td>企业设备运行数据</td><td class="mono">12个月</td><td class="mono">800 T/GB</td><td class="mono">12 GB</td><td class="mono up">6,720 T</td><td><span class="badge badge-active">运行中</span></td>
+              </tr>
+              <tr>
+                <td class="strong">新能源车数据理财</td><td>新能源车续航数据</td><td class="mono">6个月</td><td class="mono">1,000 T/GB</td><td class="mono">—</td><td class="mono">—</td><td><span class="badge badge-pending">待审核</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">收益分润预览</span></div>
+        <div class="revenue-bars">
+          <div class="revenue-bar-row">
+            <span class="revenue-bar-label" style="color:var(--accent);">数据所有方</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill owner" style="width:70%;"></div></div>
+            <span class="revenue-bar-amount">9,114 T</span>
+            <span class="revenue-bar-pct">70%</span>
+          </div>
+          <div class="revenue-bar-row">
+            <span class="revenue-bar-label" style="color:var(--accent2);">鉴权方</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill endorser" style="width:15%;"></div></div>
+            <span class="revenue-bar-amount">1,953 T</span>
+            <span class="revenue-bar-pct">15%</span>
+          </div>
+          <div class="revenue-bar-row">
+            <span class="revenue-bar-label" style="color:var(--amber);">银行</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill bank" style="width:15%;"></div></div>
+            <span class="revenue-bar-amount">1,953 T</span>
+            <span class="revenue-bar-pct">15%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 6: TOKEN & MEMBERSHIP ===== -->
+    <div class="page" id="page-token">
+      <div class="col-21">
+        <div class="token-card">
+          <div class="token-balance-label">Token 余额</div>
+          <div class="token-balance" id="tokenBalance">25,000</div>
+          <div class="token-equivalent">约等于 <strong>¥2,500 RMB</strong> (1 Token = ¥0.10)</div>
+          <div style="display:flex;gap:0.75rem;margin-top:1.2rem;">
+            <button class="btn btn-primary" onclick="openModal('recharge')">充值</button>
+            <button class="btn btn-outline" onclick="showToast('info','兑换功能即将上线')">兑换</button>
+          </div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-head">
+            <span class="card-title">Token 余额趋势</span>
+            <span class="card-subtitle">近 30 天</span>
+          </div>
+          <div class="chart-inner" id="chart-token-trend"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">会员计划</span>
+          <span class="badge badge-accent">当前: 月卡</span>
+        </div>
+        <div class="membership-grid">
+          <div class="membership-card" onclick="showToast('info','已切换至次卡')">
+            <div class="plan-name">次卡</div>
+            <div class="plan-price">50 T</div>
+            <div class="plan-per">/次</div>
+            <div class="plan-features">
+              按次计费<br>灵活使用<br>无最低消费
+            </div>
+          </div>
+          <div class="membership-card active-plan" onclick="showToast('info','您已在月卡计划中')">
+            <div class="plan-name">月卡</div>
+            <div class="plan-price">2,000 T</div>
+            <div class="plan-per">/月</div>
+            <div class="plan-features">
+              无限次浏览<br>每月10GB额度<br>1个模型免费
+            </div>
+          </div>
+          <div class="membership-card" onclick="showToast('success','已升级至季卡计划')">
+            <div class="plan-name">季卡</div>
+            <div class="plan-price">5,000 T</div>
+            <div class="plan-per">/季</div>
+            <div class="plan-features">
+              无限次浏览<br>每月30GB额度<br>3个模型免费<br>优先技术支持
+            </div>
+          </div>
+          <div class="membership-card" onclick="showToast('success','已升级至年卡计划')">
+            <div class="plan-name">年卡</div>
+            <div class="plan-price">15,000 T</div>
+            <div class="plan-per">/年</div>
+            <div class="plan-features">
+              无限次浏览<br>每月50GB额度<br>全部模型免费<br>专属客户经理
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">会员状态</span>
+          <span class="badge badge-active">月卡有效</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.8rem;font-size:0.84rem;max-width:500px;">
+          <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+            <span style="color:var(--text-3);">当前计划</span><span class="strong">月卡 (2,000 T/月)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+            <span style="color:var(--text-3);">开通日期</span><span class="mono">2026-06-01</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+            <span style="color:var(--text-3);">到期日期</span><span class="mono">2026-07-01</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+            <span style="color:var(--text-3);">剩余天数</span><span style="color:var(--emerald);font-weight:600;">15 天</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+            <span style="color:var(--text-3);">本月已用流量</span><span class="mono">6.8 GB / 10 GB</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">交易记录</span><button class="btn btn-ghost btn-xs">全部</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>日期</th><th>类型</th><th>描述</th><th>金额</th><th>余额</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">2026-06-15</td><td><span class="badge badge-accent">消费</span></td><td class="strong">设备故障预测模型运行</td><td class="mono down">-23 T</td><td class="mono">24,977 T</td></tr>
+              <tr><td class="mono">2026-06-14</td><td><span class="badge badge-accent">消费</span></td><td class="strong">消费倾向评分模型运行</td><td class="mono down">-53 T</td><td class="mono">25,000 T</td></tr>
+              <tr><td class="mono">2026-06-14</td><td><span class="badge badge-accent2">分润</span></td><td class="strong">健康数据理财分润</td><td class="mono up">+1,200 T</td><td class="mono">25,053 T</td></tr>
+              <tr><td class="mono">2026-06-10</td><td><span class="badge badge-accent">消费</span></td><td class="strong">购买: 个人健康数据</td><td class="mono down">-500 T</td><td class="mono">23,853 T</td></tr>
+              <tr><td class="mono">2026-06-05</td><td><span class="badge badge-pending">分润</span></td><td class="strong">设备数据理财分润</td><td class="mono up">+2,000 T</td><td class="mono">24,353 T</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE 7: TRANSACTIONS ===== -->
+    <div class="page" id="page-transactions">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">总交易笔数</div><div class="kpi-value accent">328</div><div class="kpi-change">本月 47 笔</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">累计 Token 流水</div><div class="kpi-value emerald">86,500</div><div class="kpi-change up">↑ 本月 +11,300 T</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">分润累计</div><div class="kpi-value amber">18,720</div><div class="kpi-change">所有方 70%</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">本月交易数</div><div class="kpi-value accent2">47</div><div class="kpi-change up">↑ 较上月 +12%</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">交易历史</span>
+          <div style="display:flex;gap:0.5rem;">
+            <select class="form-select" style="width:auto;">
+              <option>全部类型</option>
+              <option>数据购买</option>
+              <option>模型使用</option>
+              <option>理财分润</option>
+              <option>充值</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="showToast('info','导出功能准备中')">导出CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>交易ID</th><th>日期</th><th>类型</th><th>产品/服务</th><th>金额</th><th>状态</th><th>分润明细</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">TX-0328</td><td class="mono">2026-06-15 14:32</td><td><span class="badge badge-accent">模型使用</span></td><td class="strong">设备故障预测</td><td class="mono down">-23 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><button class="btn btn-ghost btn-xs" onclick="showRevenueDetail('TX-0328')">查看</button></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0327</td><td class="mono">2026-06-15 10:18</td><td><span class="badge badge-accent2">数据下载</span></td><td class="strong">个人健康数据</td><td class="mono">—</td><td><span class="badge badge-active">完成</span></td>
+                <td><span style="font-size:0.72rem;color:var(--text-3);">无分润</span></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0326</td><td class="mono">2026-06-14 16:45</td><td><span class="badge badge-accent">模型使用</span></td><td class="strong">消费倾向评分</td><td class="mono down">-53 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><button class="btn btn-ghost btn-xs" onclick="showRevenueDetail('TX-0326')">查看</button></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0325</td><td class="mono">2026-06-14 09:30</td><td><span class="badge badge-accent">模型使用</span></td><td class="strong">健康风险评估</td><td class="mono down">-40 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><button class="btn btn-ghost btn-xs" onclick="showRevenueDetail('TX-0325')">查看</button></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0324</td><td class="mono">2026-06-14 08:00</td><td><span class="badge badge-pending">理财分润</span></td><td class="strong">健康数据理财包</td><td class="mono up">+1,200 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><span style="font-size:0.72rem;">所有方:70% | 鉴权:15% | 银行:15%</span></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0323</td><td class="mono">2026-06-10 15:20</td><td><span class="badge badge-accent2">数据购买</span></td><td class="strong">个人健康数据</td><td class="mono down">-500 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><button class="btn btn-ghost btn-xs" onclick="showRevenueDetail('TX-0323')">查看</button></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0322</td><td class="mono">2026-06-05 12:00</td><td><span class="badge badge-pending">理财分润</span></td><td class="strong">设备数据理财包</td><td class="mono up">+2,000 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><span style="font-size:0.72rem;">所有方:70% | 鉴权:15% | 银行:15%</span></td>
+              </tr>
+              <tr>
+                <td class="mono">TX-0321</td><td class="mono">2026-06-01 09:00</td><td><span class="badge badge-accent2">会员充值</span></td><td class="strong">月卡续费</td><td class="mono down">-2,000 T</td><td><span class="badge badge-active">完成</span></td>
+                <td><span style="font-size:0.72rem;color:var(--text-3);">银行收入</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">分润分布概览 (累计)</span></div>
+        <div class="revenue-bars">
+          <div class="revenue-bar-row">
+            <span class="revenue-bar-label" style="color:var(--accent);">数据所有方</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill owner" style="width:65%;"></div></div>
+            <span class="revenue-bar-amount">56,225 T</span>
+            <span class="revenue-bar-pct">65%</span>
+          </div>
+          <div class="revenue-bar-row">
+            <span class="revenue-bar-label" style="color:var(--accent2);">鉴权方</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill endorser" style="width:18%;"></div></div>
+            <span class="revenue-bar-amount">15,570 T</span>
+            <span class="revenue-bar-pct">18%</span>
+          </div>
+          <div class="revenue-bar-row">
+            <span class="revenue-bar-label" style="color:var(--amber);">银行</span>
+            <div class="revenue-bar-track"><div class="revenue-bar-fill bank" style="width:17%;"></div></div>
+            <span class="revenue-bar-amount">14,705 T</span>
+            <span class="revenue-bar-pct">17%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ===== MODAL: RECHARGE ===== -->
+<div class="modal-overlay" id="modal-recharge">
+  <div class="modal">
+    <h3>Token 充值</h3>
+    <div class="form-group">
+      <label class="form-label">充值金额 (Token)</label>
+      <input class="form-input" type="number" value="5000" placeholder="请输入充值 Token 数量" id="rechargeAmount">
+      <div class="form-hint">约等于 ¥500 RMB</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">支付方式</label>
+      <select class="form-select">
+        <option>银行转账</option>
+        <option>微信支付</option>
+        <option>支付宝</option>
+        <option>对公转账</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('recharge')">取消</button>
+      <button class="btn btn-primary" onclick="doRecharge()">确认充值</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: RUN MODEL ===== -->
+<div class="modal-overlay" id="modal-run-model">
+  <div class="modal">
+    <h3>运行分析模型</h3>
+    <div class="form-group">
+      <label class="form-label">选择模型</label>
+      <select class="form-select" id="runModelSelect">
+        <option>设备故障预测 (50 T/h)</option>
+        <option>消费倾向评分 (50 T/h)</option>
+        <option>健康风险评估 (200 T/h)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">选择数据源</label>
+      <select class="form-select">
+        <option>个人健康数据 (2.4 GB)</option>
+        <option>企业设备运行数据 (18.7 GB)</option>
+        <option>消费行为数据 (8.1 GB)</option>
+        <option>新能源车续航数据 (22 GB)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">参数设定</label>
+        <input class="form-input" placeholder="自定义参数 (JSON)" value='{"threshold": 0.85, "mode": "fast"}'>
+      </div>
+      <div class="form-group">
+        <label class="form-label">预计耗时</label>
+        <input class="form-input" value="30-60 min" readonly style="opacity:0.6;">
+      </div>
+    </div>
+    <div class="form-hint" style="margin-bottom:0.75rem;">
+      <strong>预计消耗:</strong> <span id="estToken">25-50 Token</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('run-model')">取消</button>
+      <button class="btn btn-accent2" onclick="closeModal('run-model');showToast('success','模型已开始运行，预计30分钟完成')">启动运行</button>
+    </div>
+  </div>
+</div>
+
+<script src="echarts.min.js"></script>
+<script>
+// ===== NAVIGATION =====
+document.querySelectorAll('.nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var page = this.dataset.page;
+    switchPage(page);
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  var titles = {
+    'market': '数据市场',
+    'models': '模型市场',
+    'my-data': '我的数据',
+    'my-models': '我的模型',
+    'wealth-collab': '数据理财合作',
+    'token': 'Token与会员',
+    'transactions': '交易记录'
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+  document.getElementById('breadcrumbPage').textContent = titles[page] || page;
+}
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+// ===== FILTER CHIPS =====
+function toggleChip(chip, group) {
+  var chips = chip.parentElement.querySelectorAll('.chip[onclick*="' + group + '"]');
+  chips.forEach(function(c) { c.classList.remove('active'); });
+  chip.classList.add('active');
+  filterDataCards();
+}
+
+// ===== DATA CARD FILTERING =====
+function filterDataCards() {
+  var searchTerm = (document.getElementById('dataSearch') ? document.getElementById('dataSearch').value : '').toLowerCase();
+  var activeIndustry = document.querySelector('.chip.active[onclick*="industry"]');
+  var activeType = document.querySelector('.chip.active[onclick*="type"]');
+  var activePrice = document.querySelector('.chip.active[onclick*="price"]');
+
+  var cards = document.querySelectorAll('#dataCardGrid .data-card');
+  cards.forEach(function(card) {
+    var industry = card.getAttribute('data-industry') || '';
+    var type = card.getAttribute('data-type') || '';
+    var price = parseInt(card.getAttribute('data-price') || '0');
+    var name = (card.querySelector('.data-card-name') ? card.querySelector('.data-card-name').textContent : '').toLowerCase();
+
+    var show = true;
+
+    // Search filter
+    if (searchTerm && name.indexOf(searchTerm) === -1 && industry.toLowerCase().indexOf(searchTerm) === -1) {
+      show = false;
+    }
+
+    // Industry filter
+    if (activeIndustry && !activeIndustry.textContent.includes('全部')) {
+      if (industry !== activeIndustry.textContent.trim()) show = false;
+    }
+
+    // Type filter
+    if (activeType && !activeType.textContent.includes('全部')) {
+      if (type !== activeType.textContent.trim()) show = false;
+    }
+
+    // Price filter
+    if (activePrice && !activePrice.textContent.includes('全部')) {
+      var pt = activePrice.textContent.trim();
+      if (pt === '< 500T' && price >= 500) show = false;
+      else if (pt === '500-1000T' && (price < 500 || price > 1000)) show = false;
+      else if (pt === '1000-5000T' && (price < 1000 || price > 5000)) show = false;
+      else if (pt === '> 5000T' && price <= 5000) show = false;
+    }
+
+    card.style.display = show ? '' : 'none';
+  });
+}
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById('modal-' + id).classList.add('show'); }
+function closeModal(id) { document.getElementById('modal-' + id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+});
+
+// ===== LOGIN / REGISTER =====
+function handleLogin(e) {
+  e.preventDefault();
+  var id = document.getElementById('loginId').value.trim();
+  var pw = document.getElementById('loginPassword').value.trim();
+  if (!id || !pw) { document.getElementById('loginError').textContent = '请输入账号和密码'; return; }
+  if (pw.length < 4) { document.getElementById('loginError').textContent = '密码至少4位'; return; }
+  document.getElementById('loginError').textContent = '';
+
+  var user = { id: id, name: id.split('@')[0] || id, role: '数据使用者', avatar: (id.substring(0,2) || 'DU').toUpperCase() };
+  localStorage.setItem('databank_trade_user', JSON.stringify(user));
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('sett-account').textContent = id;
+  updateUserChip(user);
+  showToast('success', '已登录数据交易平台，欢迎回来！');
+}
+
+function updateUserChip(user) {
+  var avatar = document.querySelector('.user-avatar');
+  var name = document.querySelector('.user-name');
+  if (avatar) avatar.textContent = user.avatar;
+  if (name) name.textContent = user.name;
+}
+
+(function() {
+  var saved = localStorage.getItem('databank_trade_user');
+  if (saved) {
+    try {
+      var user = JSON.parse(saved);
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('sett-account').textContent = user.id;
+    } catch(e) { localStorage.removeItem('databank_trade_user'); }
+  }
+})();
+
+function openSettings() { document.getElementById('settingsOverlay').classList.remove('hidden'); }
+function closeSettings() { document.getElementById('settingsOverlay').classList.add('hidden'); }
+document.getElementById('settingsOverlay').addEventListener('click', function(e) { if (e.target === this) closeSettings(); });
+document.querySelectorAll('#settingsNav .settings-nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.settings-nav-item').forEach(function(i) { i.classList.remove('active'); });
+    this.classList.add('active');
+    document.querySelectorAll('.settings-section').forEach(function(s) { s.classList.remove('active'); });
+    var target = document.getElementById('sett-' + this.dataset.settings);
+    if (target) target.classList.add('active');
+  });
+});
+
+// ===== TOASTS =====
+function showToast(type, message) {
+  var container = document.getElementById('toast-container');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  var icons = { success: '\u2713', info: '\u2139', warning: '\u26A0' };
+  toast.innerHTML = '<span class="toast-icon">' + (icons[type] || '') + '</span>' + message;
+  container.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(40px)';
+    toast.style.transition = 'all 300ms ease';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 3000);
+}
+
+// ===== RECHARGE =====
+function doRecharge() {
+  var amount = parseInt(document.getElementById('rechargeAmount').value) || 5000;
+  var current = parseInt(document.getElementById('tokenBalance').textContent.replace(/,/g, ''));
+  var newBalance = current + amount;
+  document.getElementById('tokenBalance').textContent = newBalance.toLocaleString('zh-CN');
+  closeModal('recharge');
+  showToast('success', '充值成功! +' + amount.toLocaleString('zh-CN') + ' Token');
+}
+
+// ===== REVENUE DETAIL MODAL =====
+function showRevenueDetail(txId) {
+  var details = {
+    'TX-0328': { owner: '16 T (70%)', endorser: '4 T (17%)', bank: '3 T (13%)', total: '23 T' },
+    'TX-0326': { owner: '37 T (70%)', endorser: '9 T (17%)', bank: '7 T (13%)', total: '53 T' },
+    'TX-0325': { owner: '28 T (70%)', endorser: '7 T (17%)', bank: '5 T (13%)', total: '40 T' },
+    'TX-0323': { owner: '350 T (70%)', endorser: '75 T (15%)', bank: '75 T (15%)', total: '500 T' }
+  };
+  var d = details[txId] || { owner: '70%', endorser: '15%', bank: '15%', total: 'N/A' };
+  showToast('info', '[' + txId + '] 分润明细: 所有方 ' + d.owner + ' | 鉴权方 ' + d.endorser + ' | 银行 ' + d.bank);
+}
+
+// ===== SORT DATA TABLE =====
+function sortDataTable(by) {
+  showToast('info', '排序方式已切换为: ' + (by === 'date' ? '购买日期' : by === 'name' ? '名称' : by === 'expiry' ? '有效期' : '使用次数'));
+}
+
+// ===== TOKEN TREND CHART =====
+function initTokenTrendChart() {
+  var dom = document.getElementById('chart-token-trend');
+  if (!dom) return;
+  var chart = echarts.init(dom);
+  var days = [], balance = [];
+  var val = 22000;
+  for (var i = 0; i < 30; i++) {
+    days.push('D' + (i + 1));
+    var change = Math.floor((Math.random() - 0.45) * 800);
+    val = Math.max(18000, Math.min(28000, val + change));
+    balance.push(val);
+  }
+  chart.setOption({
+    grid: { left: 55, right: 15, top: 10, bottom: 30 },
+    xAxis: { type:'category', data:days, axisLabel:{color:'#546580',fontSize:10,interval:4}, axisLine:{lineStyle:{color:'#192847'}} },
+    yAxis: { type:'value', axisLabel:{color:'#546580',fontSize:10, formatter: function(v){ return (v/1000).toFixed(0)+'k'; }}, splitLine:{lineStyle:{color:'#192847',type:'dashed'}} },
+    series: [{
+      type:'line', data:balance, smooth:true, symbol:'none',
+      lineStyle:{color:'#34d399',width:2.5},
+      areaStyle:{color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(52,211,153,0.18)'},{offset:1,color:'rgba(52,211,153,0)'}])},
+    }],
+    tooltip: { trigger:'axis', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#1e3563', textStyle:{color:'#e8edf5',fontSize:12} }
+  });
+  // Resize handler
+  window.addEventListener('resize', function() { chart.resize(); });
+}
+
+// ===== INITIALIZATION =====
+initTokenTrendChart();
+
+// Auto-update block height
+setInterval(function() {
+  var el = document.querySelector('.live-block');
+  if (el) {
+    var h = parseInt(el.textContent.replace(/,/g,'').replace('#','')) + Math.floor(Math.random() * 3);
+    el.textContent = '#' + h.toLocaleString('zh-CN');
+  }
+}, 10000);
+</script>
+</body>
+</html>

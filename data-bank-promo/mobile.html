@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>数据银行 · 让数据像资产一样</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a11;
+  --bg2:#0c111a;
+  --bg3:#101827;
+  --ink:#ece7db;
+  --muted:#9aa2b2;
+  --muted2:#697283;
+  --rule:rgba(201,169,106,.16);
+  --accent:#c9a96a;
+  --accent-bright:#e7ca8d;
+  --accent-deep:#8f7240;
+  --accent2:#4fa3a5;
+  --serif:"Noto Serif SC",serif;
+  --sans:"Noto Sans SC",sans-serif;
+  --mono:"JetBrains Mono",monospace;
+  --pad:26px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-weight:300;
+  line-height:1.75;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+::selection{background:var(--accent);color:#0a0d14}
+
+/* ---- atmosphere ---- */
+.bg{position:fixed;inset:0;z-index:-3;pointer-events:none;
+  background:
+    radial-gradient(120% 50% at 50% -5%, rgba(201,169,106,.12), transparent 60%),
+    radial-gradient(90% 40% at 90% 108%, rgba(79,163,165,.10), transparent 60%),
+    var(--bg);
+}
+.grain{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+}
+.gridlines{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.3;
+  background-image:
+    linear-gradient(rgba(201,169,106,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,169,106,.05) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:linear-gradient(180deg,#000 0%,transparent 92%);
+}
+
+/* ---- scroll progress ---- */
+.progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:50;
+  background:linear-gradient(90deg,var(--accent-bright),var(--accent));transition:width .1s linear}
+
+/* ---- shell ---- */
+.wrap{max-width:520px;margin:0 auto;padding:0 var(--pad)}
+section{position:relative;padding:88px 0}
+
+/* ---- kicker & headings ---- */
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--accent);
+  text-transform:uppercase;display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.kicker::before{content:"";width:34px;height:1px;background:var(--accent)}
+h2{font-family:var(--serif);font-weight:700;font-size:clamp(26px,7vw,34px);line-height:1.3;letter-spacing:.01em}
+.lead{color:var(--muted);margin-top:16px;font-size:15px;line-height:1.9}
+
+/* ===== S1 HERO ===== */
+.s-hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding-top:32px;padding-bottom:40px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:56px}
+.brand .mark{
+  width:40px;height:40px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(160deg,var(--accent-bright),var(--accent));
+  color:#0a0d14;font-family:var(--mono);font-weight:600;font-size:17px;
+  box-shadow:0 8px 24px rgba(201,169,106,.35);
+}
+.brand .t{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:.04em}
+.brand .s{font-size:10px;color:var(--muted);letter-spacing:.3em;font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.26em;color:var(--accent);
+  line-height:1.9;margin-bottom:28px}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(44px,13vw,64px);line-height:1.14;letter-spacing:.01em}
+h1 .accent{background:linear-gradient(105deg,var(--accent-bright) 8%,var(--accent) 48%,var(--accent-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.subline{display:block;margin-top:24px;font-family:var(--serif);font-weight:700;
+  font-size:clamp(17px,4.6vw,21px);letter-spacing:.14em;white-space:nowrap;
+  background:linear-gradient(100deg,var(--accent-bright),var(--accent) 65%,var(--accent-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-note{margin-top:30px;font-size:15px;color:var(--muted);line-height:1.95}
+.hero-note b{color:var(--ink);font-weight:500}
+.scroll-hint{margin-top:auto;padding-top:56px;display:flex;flex-direction:column;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--muted2)}
+.scroll-hint .line{width:1px;height:46px;background:linear-gradient(var(--accent),transparent);animation:drip 1.8s ease-in-out infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ===== S2 CORE ===== */
+.s-core{padding-top:60px}
+.core-grid{display:grid;gap:16px;margin-top:36px}
+.core{
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,var(--bg2),var(--bg3));
+  border:1px solid var(--rule);border-radius:20px;padding:28px 26px;
+}
+.core::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.core .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+  color:var(--accent);border:1px solid var(--rule);padding:5px 12px;border-radius:999px;margin-bottom:16px}
+.core h3{font-family:var(--serif);font-weight:700;font-size:22px;margin-bottom:10px}
+.core p{font-size:14px;color:var(--muted);line-height:1.85}
+.core p b{color:var(--ink);font-weight:500}
+
+/* ===== S3 PILLARS ===== */
+.pillars{display:grid;gap:14px;margin-top:36px}
+.pillar{
+  display:flex;gap:18px;align-items:flex-start;
+  background:rgba(12,17,26,.65);border:1px solid var(--rule);border-radius:18px;padding:22px 20px;
+}
+.pillar .k{
+  flex:none;width:52px;height:52px;display:grid;place-items:center;
+  font-family:var(--serif);font-weight:900;font-size:24px;color:var(--accent);
+  border:1px solid rgba(201,169,106,.32);border-radius:14px;background:rgba(201,169,106,.08);
+}
+.pillar h3{font-family:var(--serif);font-weight:700;font-size:19px;margin-bottom:6px}
+.pillar p{font-size:13.5px;color:var(--muted);line-height:1.8}
+
+/* ===== S4 SCENES ===== */
+.scenes{display:grid;gap:16px;margin-top:36px}
+.scene{
+  background:linear-gradient(180deg,var(--bg2),var(--bg3));
+  border:1px solid var(--rule);border-radius:20px;padding:26px 24px;position:relative;overflow:hidden;
+}
+.scene::after{content:"";position:absolute;right:-50px;bottom:-50px;width:140px;height:140px;border-radius:50%;
+  border:1px solid rgba(201,169,106,.14)}
+.scene-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.scene-num{font-family:var(--serif);font-weight:900;font-size:34px;color:transparent;
+  -webkit-text-stroke:1px var(--accent);opacity:.85;line-height:1}
+.scene-tag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--accent);
+  border:1px solid var(--rule);padding:5px 12px;border-radius:999px;background:rgba(201,169,106,.06)}
+.scene h3{font-family:var(--serif);font-weight:700;font-size:20px;margin-bottom:10px}
+.scene p{font-size:13.5px;color:var(--muted);line-height:1.85}
+.scene p b{color:var(--ink);font-weight:500}
+
+/* ===== S5 CTA ===== */
+.s-cta{text-align:center;padding:120px 0 90px;position:relative}
+.s-cta::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(70% 60% at 50% 100%, rgba(201,169,106,.16), transparent 65%)}
+.s-cta h2{font-size:clamp(28px,8vw,38px);margin-bottom:18px}
+.s-cta p{color:var(--muted);margin-bottom:38px;font-size:15px;line-height:1.9}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;font-family:var(--sans);font-size:15px;font-weight:500;
+  padding:15px 34px;border-radius:12px;cursor:pointer;transition:.3s;border:1px solid transparent;
+  background:linear-gradient(160deg,var(--accent-bright),var(--accent));color:#0a0d14;
+  box-shadow:0 12px 32px rgba(201,169,106,.3);
+}
+.btn:active{transform:scale(.97)}
+.foot-note{margin-top:58px;font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted2);
+  display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+
+/* ---- reveal ---- */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+
+@media(min-width:560px){
+  section{padding:120px 0}
+  .pillars,.scenes{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="grain"></div>
+<div class="gridlines"></div>
+<div class="progress" id="progress"></div>
+
+<!-- ============ S1 HERO ============ -->
+<section class="s-hero">
+  <div class="wrap">
+    <div class="brand reveal in">
+      <div class="mark">DB</div>
+      <div>
+        <div class="t">数据银行</div>
+        <div class="s">DATA BANK</div>
+      </div>
+    </div>
+
+    <div class="eyebrow reveal in d1">可信数据增值服务商<br>数据世界基础设施服务商</div>
+    <h1 class="reveal in d1">让数据<br><span class="accent">像资产一样</span></h1>
+    <div class="subline reveal in d2">存得安心 · 用得放心 · 还能增值</div>
+    <p class="hero-note reveal in d3">数据银行像管钱一样管数据——<b>区块链联合账户，保障数据所有方、鉴权方、使用方各方的权益与收益</b>；<b>隐私计算让数据「可用不可见」</b>，让分散的数据真正流动起来、变成资产。</p>
+
+    <div class="scroll-hint reveal in d3">
+      <span>向下滑动</span>
+      <div class="line"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ S2 CORE ============ -->
+<section class="s-core">
+  <div class="wrap">
+    <div class="kicker reveal">工作原理</div>
+    <h2 class="reveal">两大技术底座</h2>
+    <div class="core-grid">
+      <div class="core reveal">
+        <span class="tag">BLOCKCHAIN</span>
+        <h3>区块链联合账户</h3>
+        <p>把<b>数据所有方、鉴权方、使用方</b>绑定进一个可信账户，各方贡献与分成写成智能合约，<b>权益与收益自动、公平分配</b>。</p>
+      </div>
+      <div class="core reveal d1">
+        <span class="tag">PRIVACY COMPUTE</span>
+        <h3>隐私计算</h3>
+        <p>数据「<b>可用不可见</b>」——使用方能算出结果，却拿不到原始数据，<b>安全与价值兼得</b>。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ S3 PILLARS ============ -->
+<section class="s-pillars">
+  <div class="wrap">
+    <div class="kicker reveal">核心能力</div>
+    <h2 class="reveal">存 · 用 · 增值</h2>
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="k">存</div>
+        <div>
+          <h3>存得安心</h3>
+          <p>数据所有方可按价值自主存入数据，并自由设定开放的粒度与范围——存什么、共享多少、对谁开放，都由你掌控。</p>
+        </div>
+      </div>
+      <div class="pillar reveal d1">
+        <div class="k">用</div>
+        <div>
+          <h3>用得放心</h3>
+          <p>隐私计算实现「可用不可见」，数据使用方能基于数据鉴权方的数据算出结果，却拿不到原始数据。</p>
+        </div>
+      </div>
+      <div class="pillar reveal d2">
+        <div class="k">增</div>
+        <div>
+          <h3>合作得省心</h3>
+          <p>联合账户 + 协议签约，让多方协作的贡献和收益自动、公平地分配，每一方都各得其所。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ S4 SCENES ============ -->
+<section class="s-scenes">
+  <div class="wrap">
+    <div class="kicker reveal">业务示例</div>
+    <h2 class="reveal">六个场景，看见数据的价值</h2>
+    <p class="lead reveal">从金融机构到个体运动员，数据银行让「数据方」与「使用方」各取所需、各得其利。</p>
+
+    <div class="scenes">
+      <div class="scene reveal">
+        <div class="scene-head"><div class="scene-num">01</div><div class="scene-tag">金融</div></div>
+        <h3>金融风控联合建模</h3>
+        <p>多家银行、消费金融公司各自握有客户数据，却谁也不敢把原始数据交出去。通过数据银行，各方在「数据不出域」的前提下获取数据所有方授权，联合构建风控、反欺诈、还款意愿等模型，供金融机构按需选用——<b>模型更好，客户隐私零泄露</b>。</p>
+      </div>
+      <div class="scene reveal">
+        <div class="scene-head"><div class="scene-num">02</div><div class="scene-tag">医疗</div></div>
+        <h3>医疗科研数据共享</h3>
+        <p>多家医院、研究机构要协作做临床研究，患者隐私是红线。数据银行由数据所有方授权，让研究方基于数据鉴权方的加密数据完成统计与建模，<b>既推动科研，又守住合规底线</b>。</p>
+      </div>
+      <div class="scene reveal">
+        <div class="scene-head"><div class="scene-num">03</div><div class="scene-tag">政务</div></div>
+        <h3>政务数据「一网通办」</h3>
+        <p>跨部门业务常卡在「数据怎么安全流转」上。数据银行打通部门间的数据壁垒，让办事材料安全共享、全程留痕可追溯，<b>群众办事少跑腿、少提交</b>。</p>
+      </div>
+      <div class="scene reveal">
+        <div class="scene-head"><div class="scene-num">04</div><div class="scene-tag">营销</div></div>
+        <h3>跨平台精准营销</h3>
+        <p>品牌方想了解用户画像做精准投放，又怕踩隐私红线。通过数据银行做多方数据联合分析，<b>只输出群体洞察、不暴露个体信息</b>，营销精准、合规稳定。</p>
+      </div>
+      <div class="scene reveal">
+        <div class="scene-head"><div class="scene-num">05</div><div class="scene-tag">工业制造</div></div>
+        <h3>生产数据可变现</h3>
+        <p>工厂日常积累的工艺参数、设备运行、良品率等数据，过去用完就「沉睡」。上架数据银行脱敏建模后，其他企业付费调用——<b>数据方把沉睡数据变成收入，付费方花小钱提升良品率、降本增效</b>。</p>
+      </div>
+      <div class="scene reveal">
+        <div class="scene-head"><div class="scene-num">06</div><div class="scene-tag">运动健康</div></div>
+        <h3>个体数据也能增值</h3>
+        <p>专业运动员的运动轨迹、心率、发力模式经建模封装成训练/康复模型，普通用户或康复机构付费调用即可获得专业指导；<b>运动员从自己的数据中持续获得回报</b>。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ S5 CTA ============ -->
+<section class="s-cta">
+  <div class="wrap">
+    <h2 class="reveal">让数据，成为您的新资产</h2>
+    <p class="reveal">数据银行，可信数据增值服务商与数据世界基础设施服务商——存得安心，用得放心，还能增值。</p>
+    <a class="btn reveal" href="#top">了解更多</a>
+    <div class="foot-note reveal">
+      <span>可信</span><span>隐私</span><span>增值</span>
+      <span>© 2026 DATA BANK</span>
+    </div>
+  </div>
+</section>
+
+<script>
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+const prog=document.getElementById('progress');
+addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const sc=h.scrollTop/(h.scrollHeight-h.clientHeight);
+  prog.style.width=(sc*100)+'%';
+},{passive:true});
+</script>
+</body>
+</html>

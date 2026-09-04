@@ -1,0 +1,3693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataBank · 用户应用平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --bg-deep: #050a14;
+  --bg-root: #080e1c;
+  --bg-sidebar: #0a1020;
+  --bg-surface: #0e1629;
+  --bg-elevated: #111b33;
+  --bg-hover: #162241;
+  --bg-glass: rgba(14,22,41,0.85);
+  --bg-card: var(--bg-surface);
+  --bg-input: var(--bg-root);
+  --border: #192847;
+  --border-faint: rgba(25,40,71,0.5);
+  --border-glow: #1e3563;
+  --accent: #00d4ff;
+  --accent-dim: rgba(0,212,255,0.1);
+  --accent-glow: rgba(0,212,255,0.3);
+  --accent2: #818cf8;
+  --accent2-dim: rgba(129,140,248,0.1);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.1);
+  --emerald: #34d399;
+  --emerald-dim: rgba(52,211,153,0.1);
+  --rose: #f472b6;
+  --rose-dim: rgba(244,114,182,0.1);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.1);
+  --text: #e8edf5;
+  --text-2: #94a3b8;
+  --text-3: #546580;
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size: 15px; }
+body {
+  font-family: 'Lexend', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== NOISE OVERLAY ===== */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ===== SCANLINE ===== */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.scanline {
+  position: fixed; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.08), transparent);
+  z-index: 9998; pointer-events: none;
+  animation: scan 6s linear infinite;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-faint);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  z-index: 20;
+  position: relative;
+  backdrop-filter: blur(12px);
+}
+.sidebar::after {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, var(--accent), transparent 60%, var(--accent2) 100%);
+  opacity: 0.15;
+}
+.sidebar-brand {
+  padding: 1.4rem 1.6rem;
+  border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center; gap: 0.85rem;
+}
+.sidebar-brand .logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0891b2 60%, #818cf8 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 1.05rem;
+  color: #050a14;
+  box-shadow: 0 0 18px rgba(0,212,255,0.2);
+}
+.sidebar-brand .brand-text { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1.1; }
+.sidebar-brand .brand-ver { color: var(--text-3); font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; }
+
+.sidebar-nav { flex:1; padding: 1rem 0.85rem; display: flex; flex-direction: column; gap: 0.15rem; overflow-y: auto; }
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.nav-section {
+  font-size: 0.65rem; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 0.85rem 0.9rem 0.3rem;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 0.88rem; font-weight: 500;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid transparent;
+  position: relative;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text); }
+.nav-item.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(0,212,255,0.15);
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: -0.85rem; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+.nav-item .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; opacity: 0.7; }
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-item .nav-badge {
+  margin-left: auto;
+  font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+  padding: 0.15rem 0.5rem; border-radius: 9px;
+  background: var(--accent-dim); color: var(--accent); font-weight: 600;
+}
+.nav-divider { height: 1px; background: var(--border-faint); margin: 0.4rem 0.9rem; }
+
+.sidebar-footer {
+  padding: 1rem 1.3rem; margin: 0 0.6rem 0.6rem;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-faint);
+}
+.user-chip { display: flex; align-items: center; gap: 0.7rem; }
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), #6366f1);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.78rem; color: #fff;
+}
+.user-info .user-name { font-size: 0.85rem; font-weight: 600; }
+.user-info .user-role { font-size: 0.7rem; color: var(--text-3); }
+
+/* ===== TOPBAR ===== */
+.topbar {
+  height: var(--topbar-h);
+  background: rgba(10,16,32,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center;
+  padding: 0 2rem;
+  gap: 1.5rem;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.topbar .page-title {
+  font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em;
+}
+.topbar .breadcrumb { color: var(--text-3); font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; }
+.topbar .breadcrumb span { color: var(--text-2); }
+.topbar-actions {
+  margin-left: auto; display: flex; align-items: center; gap: 1.2rem;
+}
+.live-indicator { display: flex; align-items: center; gap: 0.4rem; }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--emerald);
+  box-shadow: 0 0 10px rgba(52,211,153,0.6);
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+.live-text { font-size: 0.75rem; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+.live-block { color: var(--text); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms var(--ease-out);
+  border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.btn-primary {
+  background: var(--accent); color: #050a14; border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(0,212,255,0.15);
+}
+.btn-primary:hover { background: #00e5ff; box-shadow: 0 0 28px rgba(0,212,255,0.3); transform: translateY(-1px); }
+.btn-outline {
+  background: transparent; border-color: var(--border); color: var(--text-2);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.btn-ghost {
+  background: transparent; border-color: transparent; color: var(--text-2);
+}
+.btn-ghost:hover { color: var(--text); background: var(--bg-hover); }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.74rem; }
+.btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.25); }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-xs { padding: 0.25rem 0.55rem; font-size: 0.7rem; border-radius: 4px; }
+.btn-accent2 { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(129,140,248,0.25); }
+.btn-accent2:hover { background: rgba(129,140,248,0.2); }
+.btn-amber { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.25); }
+.btn-red { background: var(--red-dim); color: var(--red); border-color: rgba(248,113,113,0.25); }
+.btn-emerald { background: var(--emerald-dim); color: var(--emerald); border-color: rgba(52,211,153,0.25); }
+
+/* ===== LOGIN OVERLAY ===== */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, rgba(5,10,20,0.97) 0%, rgba(8,16,36,0.97) 50%, rgba(5,10,20,0.97) 100%);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(20px);
+}
+.login-overlay.hidden { display: none; }
+.login-box {
+  width: 420px; padding: 2.5rem 2.2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 0 60px rgba(0,212,255,0.08);
+  position: relative; overflow: hidden;
+}
+.login-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.login-logo {
+  text-align: center; margin-bottom: 2rem;
+}
+.login-logo .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.login-logo h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+.login-logo p { font-size: 0.8rem; color: var(--text-3); }
+.login-form { display: flex; flex-direction: column; gap: 1rem; }
+.login-input {
+  width: 100%; padding: 0.75rem 1rem;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 0.9rem; font-family: inherit;
+  outline: none; transition: border-color 0.2s;
+}
+.login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+.login-input::placeholder { color: var(--text-3); }
+.login-btn {
+  width: 100%; padding: 0.75rem; background: var(--accent);
+  color: #050a14; border: none; border-radius: var(--radius-sm);
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.2s;
+}
+.login-btn:hover { filter: brightness(1.1); }
+.login-tip {
+  text-align: center; font-size: 0.76rem; color: var(--text-3); margin-top: 0.5rem;
+}
+.login-error {
+  color: #f87171; font-size: 0.8rem; text-align: center; min-height: 1.2em;
+}
+
+/* ===== SETTINGS HEADER BUTTON ===== */
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 12px var(--accent-dim); }
+
+/* ===== SETTINGS MODAL ===== */
+.settings-overlay {
+  position: fixed; inset: 0; z-index: 9980;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+}
+.settings-overlay.hidden { display: none; }
+.settings-dialog {
+  width: 720px; max-height: 85vh;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.settings-header {
+  padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border-faint);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.settings-header h3 { font-size: 1.1rem; font-weight: 700; }
+.settings-header .btn-icon { margin-left: auto; }
+.settings-body { display: flex; flex: 1; overflow: hidden; min-height: 400px; }
+.settings-nav {
+  width: 180px; border-right: 1px solid var(--border-faint);
+  padding: 0.8rem 0; background: var(--bg-elevated);
+  display: flex; flex-direction: column; gap: 0.2rem;
+}
+.settings-nav-item {
+  padding: 0.65rem 1.2rem; font-size: 0.84rem; color: var(--text-3);
+  cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent;
+}
+.settings-nav-item:hover { color: var(--text); background: var(--bg-hover); }
+.settings-nav-item.active {
+  color: var(--accent); background: var(--accent-dim);
+  border-left-color: var(--accent); font-weight: 600;
+}
+.settings-content {
+  flex: 1; overflow-y: auto; padding: 1.5rem;
+}
+.settings-section { display: none; }
+.settings-section.active { display: block; }
+.settings-field {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.9rem 0; border-bottom: 1px solid var(--border-faint);
+}
+.settings-field:last-child { border-bottom: none; }
+.settings-field-label { color: var(--text-3); font-size: 0.84rem; }
+.settings-field-value { font-size: 0.86rem; color: var(--text); font-weight: 500; }
+.settings-field-right { display: flex; align-items: center; gap: 0.6rem; }
+
+/* Danger zone */
+.settings-danger { margin-top: 1.5rem; padding: 1rem; border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm); background: rgba(239,68,68,0.05); }
+.settings-danger h4 { color: #f87171; margin-bottom: 0.5rem; font-size: 0.9rem; }
+
+/* ===== SETTINGS TOGGLE SWITCH ===== */
+.toggle-switch {
+  position: relative; width: 44px; height: 24px;
+  background: var(--border); border-radius: 12px;
+  cursor: pointer; transition: all 0.25s;
+}
+.toggle-switch.on { background: var(--emerald); }
+.toggle-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; transition: all 0.25s;
+}
+.toggle-switch.on::after { left: 22px; }
+
+/* ===== CONTENT ===== */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.content {
+  flex:1; overflow-y: auto; overflow-x: hidden;
+  padding: 1.8rem 2rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  scroll-behavior: smooth;
+}
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== PAGES ===== */
+.page { display:none; }
+.page.active { display:block; min-height:0; animation: pageIn 350ms var(--ease) both; }
+.page.active > .card,
+.page.active > .kpi-grid,
+.page.active > .tabs,
+.page.active > .section-header,
+.page.active > .flex-row,
+.page.active > .col-2,
+.page.active > .table-wrap { margin-bottom: 1.5rem; }
+.page.active > .card:last-child { margin-bottom: 0; }
+@keyframes pageIn {
+  from { opacity:0; transform: translateY(10px); }
+  to { opacity:1; transform: translateY(0); }
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: all 200ms var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+.card:hover { border-color: var(--border-glow); }
+.card-glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-faint);
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.card-title { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
+.card-subtitle { font-size: 0.76rem; color: var(--text-3); }
+
+/* ===== KPI CARDS ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.3rem 1.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 200ms var(--ease-out);
+  cursor: default;
+}
+.kpi-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+.kpi-card::before {
+  content: ''; position: absolute; top: -40%; right: -20%;
+  width: 120px; height: 120px; border-radius: 50%;
+  opacity: 0.06; transition: opacity 300ms;
+}
+.kpi-card.accent::before { background: var(--accent); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.emerald::before { background: var(--emerald); }
+.kpi-card.accent2::before { background: var(--accent2); }
+.kpi-card:hover::before { opacity: 0.12; }
+.kpi-label { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.25rem; }
+.kpi-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin: 0.3rem 0 0.15rem; letter-spacing: -0.02em; line-height: 1.1; }
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.amber { color: var(--amber); }
+.kpi-value.emerald { color: var(--emerald); }
+.kpi-value.accent2 { color: var(--accent2); }
+.kpi-change { font-size: 0.76rem; color: var(--text-3); margin-top: 0.1rem; }
+.kpi-change.up { color: var(--emerald); }
+.kpi-change.down { color: var(--red); }
+
+/* ===== TABLES ===== */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+}
+table {
+  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+}
+th {
+  background: rgba(17,27,51,0.6);
+  padding: 0.65rem 1rem; text-align: left;
+  font-weight: 600; font-size: 0.72rem; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-faint); white-space: nowrap;
+}
+td {
+  padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-faint);
+  color: var(--text-2); white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(22,34,65,0.4); }
+td.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+td.strong { color: var(--text); font-weight: 500; }
+td.up { color: var(--emerald); }
+td.down { color: var(--red); }
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em;
+}
+.badge-active { background: var(--emerald-dim); color: var(--emerald); }
+.badge-pending { background: var(--amber-dim); color: var(--amber); }
+.badge-dormant { background: rgba(84,101,128,0.12); color: var(--text-3); }
+.badge-aaa { background: rgba(52,211,153,0.15); color: var(--emerald); }
+.badge-aa { background: rgba(0,212,255,0.12); color: var(--accent); }
+
+/* ===== CHARTS ===== */
+.chart-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.chart-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; }
+.chart-inner { height: 280px; }
+
+/* ===== GRID LAYOUTS ===== */
+.col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.col-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.col-21 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+.col-12 { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
+
+/* ===== TABS ===== */
+.tabs { display:flex; gap:0.2rem; margin-bottom:1.25rem; }
+.tab {
+  padding: 0.45rem 1.1rem; font-size: 0.82rem; font-weight: 600;
+  border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--text-3); border: 1px solid transparent;
+  transition: all 180ms var(--ease-out);
+}
+.tab:hover { color: var(--text-2); background: var(--bg-hover); }
+.tab.active { color: var(--accent); background: var(--accent-dim); border-color: rgba(0,212,255,0.15); }
+
+/* ===== FORMS ===== */
+.form-group { margin-bottom: 1rem; }
+.form-label { display:block; font-size:0.74rem; font-weight:600; color:var(--text-3); margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.05em; }
+.form-input, .form-select {
+  width: 100%; padding: 0.6rem 0.85rem;
+  background: var(--bg-root); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  font-size: 0.84rem; transition: border-color 180ms; outline: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.form-input::placeholder { color: var(--text-3); }
+.form-select { cursor: pointer; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.form-hint { font-size:0.7rem; color:var(--text-3); margin-top:0.3rem; }
+
+/* ===== JOINT ACCOUNT - CONSUMPTION SIM ===== */
+.joint-hero {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.5rem; margin-bottom: 1rem;
+}
+.joint-visual {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1.8rem;
+}
+.donut-container { position: relative; width: 200px; height: 200px; }
+.donut-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.donut-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  text-align: center;
+}
+.donut-center .total-label { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.donut-center .total-value { font-size: 1.6rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); margin-top: 2px; }
+.party-bars { width: 100%; display: flex; flex-direction: column; gap: 0.7rem; }
+.party-bar-row { display: flex; align-items: center; gap: 0.7rem; }
+.party-bar-label { width: 70px; font-size: 0.78rem; font-weight: 600; color: var(--text-2); text-align: right; }
+.party-bar-track { flex:1; height: 10px; background: var(--bg-root); border-radius: 5px; overflow: hidden; }
+.party-bar-fill {
+  height: 100%; border-radius: 5px; transition: width 600ms var(--ease);
+  position: relative;
+}
+.party-bar-fill.user { background: linear-gradient(90deg, var(--accent), #00b4d8); }
+.party-bar-fill.provider { background: linear-gradient(90deg, var(--rose), #e11d48); }
+.party-bar-fill.bank { background: linear-gradient(90deg, var(--emerald), #059669); }
+.party-bar-amount { width: 110px; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+.party-bar-pct { width: 50px; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--text-3); }
+
+.consume-controls {
+  display: flex; gap: 0.6rem; align-items: center;
+}
+.consume-btn {
+  padding: 0.75rem 2rem; font-size: 1rem; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #00b4d8);
+  color: #050a14; border: none; border-radius: var(--radius);
+  cursor: pointer; transition: all 180ms var(--ease-out);
+  font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+  box-shadow: 0 0 24px rgba(0,212,255,0.2);
+}
+.consume-btn:hover { transform: scale(1.03); box-shadow: 0 0 36px rgba(0,212,255,0.35); }
+.consume-btn:active { transform: scale(0.97); }
+.consume-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; transform: none; }
+.consume-btn.bulk {
+  background: linear-gradient(135deg, var(--accent2), #6366f1);
+  box-shadow: 0 0 24px rgba(129,140,248,0.2);
+  font-size: 0.9rem; padding: 0.75rem 1.4rem;
+}
+.transfer-log { max-height: 240px; overflow-y: auto; }
+.transfer-log::-webkit-scrollbar { width: 4px; }
+.transfer-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.transfer-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.5rem 0.7rem; border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;
+  animation: slideIn 300ms var(--ease) both;
+}
+@keyframes slideIn {
+  from { opacity:0; transform: translateX(-10px); }
+  to { opacity:1; transform: translateX(0); }
+}
+.transfer-item:nth-child(odd) { background: rgba(14,22,41,0.5); }
+.transfer-time { color: var(--text-3); font-size: 0.7rem; min-width: 55px; }
+.transfer-desc { flex:1; color: var(--text-2); }
+.transfer-amount { font-weight: 600; }
+.transfer-amount.in { color: var(--emerald); }
+.transfer-amount.out { color: var(--red); }
+
+/* ===== REFUND CALCULATOR ===== */
+.refund-calc {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+.refund-slider-wrap { margin: 1rem 0; }
+.refund-slider-label { display:flex; justify-content:space-between; margin-bottom:0.4rem; font-size:0.78rem; }
+.refund-slider {
+  width: 100%; -webkit-appearance: none; height: 6px;
+  background: var(--border); border-radius: 3px; outline: none;
+}
+.refund-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--accent);
+  cursor: pointer; box-shadow: 0 0 10px rgba(0,212,255,0.4);
+}
+.refund-result {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.7rem; margin-top: 1rem;
+}
+.refund-result-item {
+  background: var(--bg-root);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.refund-result-item .refund-party { font-size: 0.82rem; font-weight: 600; color: var(--text-2); }
+.refund-result-item .refund-value { font-size: 1.05rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.refund-result-item .refund-value.user { color: var(--accent); }
+.refund-result-item .refund-value.gym { color: var(--accent2); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display:none;
+  position:fixed; inset:0;
+  background: rgba(5,10,20,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  align-items:center; justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  width: 500px; max-width: 90vw;
+  max-height: 80vh; overflow-y: auto;
+  animation: modalIn 280ms var(--ease) both;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(16px) scale(0.96); }
+  to { opacity:1; transform: translateY(0) scale(1); }
+}
+.modal h3 { font-size:1.15rem; margin-bottom:1.5rem; font-weight: 700; }
+.modal-actions { display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.8rem; }
+
+/* ===== MODAL CONTAINER (larger) ===== */
+.modal-container {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  animation: modalIn 280ms var(--ease) both;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.modal-close {
+  font-size: 1.5rem; color: var(--text-3); cursor: pointer;
+  line-height: 1; transition: color 0.2s;
+}
+.modal-close:hover { color: var(--text); }
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed; top: 1rem; right: 1rem; z-index: 200;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.toast {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius);
+  padding: 0.8rem 1.2rem;
+  font-size: 0.84rem; font-weight: 500;
+  display: flex; align-items: center; gap: 0.6rem;
+  animation: toastIn 300ms var(--ease) both;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  max-width: 380px;
+}
+@keyframes toastIn {
+  from { opacity:0; transform: translateX(40px); }
+  to { opacity:1; transform: translateX(0); }
+}
+.toast.success { border-color: rgba(52,211,153,0.4); }
+.toast.success .toast-icon { color: var(--emerald); }
+.toast.info { border-color: rgba(0,212,255,0.4); }
+.toast.info .toast-icon { color: var(--accent); }
+
+/* ===== DEPOSIT FLOW ===== */
+.step-indicator { display:flex; gap:0; margin-bottom:2rem; }
+.step-item {
+  flex:1; display:flex; align-items:center; gap:0.5rem;
+  padding:0.85rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  font-size:0.8rem; font-weight:600; color: var(--text-3);
+  position:relative; cursor: pointer; transition: all 200ms;
+}
+.step-item:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.step-item:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.step-item.active { color: var(--accent); background: var(--accent-dim); border-color: rgba(0,212,255,0.25); }
+.step-item.done { color: var(--emerald); }
+.step-item .step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--border); color: var(--text-3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700;
+  transition: all 200ms;
+}
+.step-item.active .step-num { background: var(--accent); color: #050a14; }
+.step-item.done .step-num { background: var(--emerald); color: #050a14; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .col-2, .col-21, .col-12 { grid-template-columns: 1fr; }
+  .col-3 { grid-template-columns: 1fr 1fr; }
+  .joint-hero { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .col-3 { grid-template-columns: 1fr; }
+  .step-indicator { flex-direction: column; }
+  .step-item { border-radius: 0 !important; }
+  .content { padding: 1rem; }
+  .joint-hero { grid-template-columns: 1fr; }
+}
+/* Multi-Select Dropdown */
+.multi-select { position:relative; }
+.multi-select-trigger {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0.6rem 0.8rem; background:var(--bg-root); border:1px solid var(--border);
+  border-radius:var(--radius-sm); cursor:pointer; font-size:0.82rem; min-height:40px;
+  flex-wrap:wrap; gap:0.25rem;
+}
+.multi-select-trigger:hover { border-color:var(--accent); }
+.multi-select-placeholder { color:var(--text-3); }
+.multi-select-arrow { font-size:0.7rem; color:var(--text-3); transition:transform 0.2s; }
+.multi-select.open .multi-select-arrow { transform:rotate(180deg); }
+.ms-tag {
+  display:inline-flex; align-items:center; gap:0.25rem;
+  padding:0.1rem 0.45rem; background:var(--accent-dim); color:var(--accent);
+  border-radius:999px; font-size:0.7rem; font-weight:500;
+}
+.ms-tag-remove { cursor:pointer; opacity:0.6; }
+.ms-tag-remove:hover { opacity:1; }
+.multi-select-dropdown {
+  position:absolute; top:100%; left:0; right:0; z-index:100;
+  background:var(--bg-elevated); border:1px solid var(--border-glow);
+  border-radius:var(--radius-sm); margin-top:4px;
+  max-height:320px; overflow-y:auto;
+  box-shadow:0 12px 32px rgba(0,0,0,0.5);
+}
+.multi-select-search { padding:0.5rem; border-bottom:1px solid var(--border); }
+.multi-select-search input {
+  width:100%; padding:0.4rem 0.6rem; background:var(--bg-root);
+  border:1px solid var(--border); border-radius:4px; color:var(--text);
+  font-size:0.78rem; outline:none;
+}
+.multi-select-search input:focus { border-color:var(--accent); }
+.multi-select-groups { padding:0.3rem 0; }
+.ms-optgroup-label {
+  padding:0.4rem 0.8rem; font-size:0.7rem; color:var(--accent);
+  font-weight:600; letter-spacing:0.04em;
+}
+.ms-option {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.35rem 0.8rem 0.35rem 1.2rem; cursor:pointer;
+  font-size:0.78rem; color:var(--text); transition:background 0.15s;
+}
+.ms-option:hover { background:var(--bg-hover); }
+.ms-option input[type="checkbox"] { accent-color:var(--accent); }
+.ms-option.hidden { display:none; }
+.ms-select-all-row { padding:0.2rem 0.5rem; border-bottom:1px solid var(--border); }
+.ms-select-all { color:var(--accent); font-weight:500; }
+.ms-select-all-group { padding-left:0.8rem; color:var(--text-2); font-size:0.72rem; }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">◈</div>
+      <h2>DataBank 数据银行</h2>
+      <p>登录即注册，首次登录自动创建账户</p>
+    </div>
+    <form class="login-form" onsubmit="handleLogin(event)">
+      <input class="login-input" type="text" id="loginId" placeholder="手机号 / 邮箱 / 用户名" required autocomplete="username">
+      <input class="login-input" type="password" id="loginPassword" placeholder="登录密码" required autocomplete="current-password">
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" type="submit">登录 / 注册</button>
+      <div class="login-tip">数据加密传输 · 链上身份验证 · 隐私守护</div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== SCANLINE ===== -->
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div class="settings-overlay hidden" id="settingsOverlay">
+  <div class="settings-dialog">
+    <div class="settings-header">
+      <h3>⚙ 系统设置</h3>
+      <button class="btn-icon" onclick="closeSettings()" title="关闭">✕</button>
+    </div>
+    <div class="settings-body">
+      <nav class="settings-nav" id="settingsNav">
+        <div class="settings-nav-item" data-settings="identity">我的身份</div>
+        <div class="settings-nav-item active" data-settings="security">账号安全</div>
+        <div class="settings-nav-item" data-settings="tx-password">交易密码</div>
+        <div class="settings-nav-item" data-settings="devices">安全设备</div>
+        <div class="settings-nav-item" data-settings="auth">授权认证</div>
+        <div class="settings-nav-item" data-settings="protocol">协议管理</div>
+        <div class="settings-nav-item" data-settings="help">帮助中心</div>
+        <div class="settings-nav-item" data-settings="about">关于系统</div>
+      </nav>
+      <div class="settings-content">
+        <!-- Identity Management -->
+        <div class="settings-section" id="sett-identity">
+          <p style="font-size:0.82rem;color:var(--text-2);margin-bottom:1rem;">管理您的身份角色与鉴权方唯一标识，系统将据此智能匹配可用数据来源</p>
+          
+          <div style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.8rem;">当前角色</div>
+            <div class="settings-field" style="border-bottom:1px solid var(--border);padding-bottom:0.8rem;margin-bottom:0.8rem;">
+              <span class="settings-field-label">👤 个人</span>
+              <span class="settings-field-right">
+                <span class="settings-field-value" style="color:var(--emerald);">当前活跃</span>
+                <span class="toggle-switch on" onclick="this.classList.toggle('on')"></span>
+              </span>
+            </div>
+            <div class="settings-field" style="border-bottom:1px solid var(--border);padding-bottom:0.8rem;margin-bottom:0.8rem;">
+              <span class="settings-field-label">👨‍👩‍👧 家庭成员</span>
+              <span class="settings-field-right">
+                <span class="settings-field-value">待激活</span>
+                <span class="toggle-switch" onclick="this.classList.toggle('on')"></span>
+              </span>
+            </div>
+            <div class="settings-field">
+              <span class="settings-field-label">🏢 企业法人</span>
+              <span class="settings-field-right">
+                <span class="settings-field-value">待激活</span>
+                <span class="toggle-switch" onclick="this.classList.toggle('on')"></span>
+              </span>
+            </div>
+            <div style="margin-top:0.8rem;">
+              <button class="btn btn-outline btn-sm" onclick="showToast('info','角色添加功能将在 v1.3 上线')">+ 添加角色</button>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.8rem;">鉴权方唯一标识（个人角色）</div>
+            <div style="font-size:0.72rem;color:var(--text-3);margin-bottom:0.8rem;">用于在各鉴权方网络中定位您的数据，系统不会存储明文，仅存储加密哈希</div>
+            <div class="settings-field"><span class="settings-field-label">身份证号</span><span class="settings-field-right"><input class="form-input" value="3101**********1234" style="width:180px;font-size:0.75rem;" readonly><button class="btn btn-outline btn-sm">修改</button></span></div>
+            <div class="settings-field"><span class="settings-field-label">手机号</span><span class="settings-field-right"><input class="form-input" value="138****8888" style="width:180px;font-size:0.75rem;" readonly><button class="btn btn-outline btn-sm">修改</button></span></div>
+            <div class="settings-field"><span class="settings-field-label">医保号</span><span class="settings-field-right"><input class="form-input" value="3205*********001" style="width:180px;font-size:0.75rem;" readonly><button class="btn btn-outline btn-sm">修改</button></span></div>
+            <div class="settings-field"><span class="settings-field-label">社保号</span><span class="settings-field-right"><input class="form-input" value="3101*********002" style="width:180px;font-size:0.75rem;" readonly><button class="btn btn-outline btn-sm">修改</button></span></div>
+            <div class="settings-field"><span class="settings-field-label">设备ID</span><span class="settings-field-right"><input class="form-input" value="A1B2C3D4-****-****" style="width:180px;font-size:0.75rem;" readonly><button class="btn btn-outline btn-sm">修改</button></span></div>
+            <div class="settings-field"><span class="settings-field-label">产权证号</span><span class="settings-field-right"><input class="form-input" value="沪(2020)******" style="width:180px;font-size:0.75rem;" readonly><button class="btn btn-outline btn-sm">修改</button></span></div>
+            <div style="margin-top:0.8rem;">
+              <button class="btn btn-outline btn-sm" onclick="showToast('info','标识添加功能将在 v1.3 上线')">+ 添加标识</button>
+            </div>
+          </div>
+        </div>
+        <!-- Security -->
+        <div class="settings-section active" id="sett-security">
+          <div class="settings-field"><span class="settings-field-label">登录账号</span><span class="settings-field-value" id="sett-account">—</span></div>
+          <div class="settings-field"><span class="settings-field-label">登录密码</span><span class="settings-field-right"><span class="settings-field-value">••••••••</span><button class="btn btn-outline btn-sm" onclick="showToast('info','密码修改功能将在 v2.0 上线')">修改</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">双重认证 (2FA)</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">生物识别登录</span><span class="settings-field-right"><span class="toggle-switch" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">登录通知</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">账号注册时间</span><span class="settings-field-value mono">2026-06-16 09:30:00</span></div>
+          <div class="settings-danger"><h4>账户删除</h4><p style="font-size:0.78rem;color:var(--text-3);">删除后所有关联数据将永久丢失且不可恢复。</p><button class="btn btn-danger btn-sm" onclick="showToast('warning','请联系银行管理员执行账户删除')" style="margin-top:0.5rem;">注销账户</button></div>
+        </div>
+        <!-- Transaction Password -->
+        <div class="settings-section" id="sett-tx-password">
+          <div class="settings-field"><span class="settings-field-label">交易密码状态</span><span class="settings-field-value" style="color:var(--emerald);">已设置</span></div>
+          <div class="settings-field"><span class="settings-field-label">修改交易密码</span><span class="settings-field-right"><input class="form-input" type="password" placeholder="输入新密码" style="width:180px;"><button class="btn btn-outline btn-sm">确认</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">交易免密额度</span><span class="settings-field-right"><select class="form-select" style="width:140px;"><option>100 Token</option><option selected>500 Token</option><option>1,000 Token</option><option>关闭免密</option></select></span></div>
+          <div class="settings-field"><span class="settings-field-label">大额交易二次确认</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">单日交易限额</span><span class="settings-field-right"><input class="form-input" type="number" value="50000" style="width:120px;"><span style="font-size:0.78rem;color:var(--text-3);">Token</span></span></div>
+        </div>
+        <!-- Devices -->
+        <div class="settings-section" id="sett-devices">
+          <div class="settings-field"><span class="settings-field-label">当前设备</span><span class="settings-field-value" style="color:var(--emerald);">Windows 11 Pro · Chrome 浏览器 ✗ 当前</span></div>
+          <div class="settings-field"><span class="settings-field-label">设备-001</span><span class="settings-field-value">MacBook Pro 16" · Safari · 北京 · 2026-06-10</span></div>
+          <div class="settings-field"><span class="settings-field-label">设备-002</span><span class="settings-field-value">iPhone 15 Pro · DataBank App · 上海 · 2026-06-12</span></div>
+          <div class="settings-field"><span class="settings-field-label">新设备登录验证</span><span class="settings-field-right"><span class="toggle-switch on" onclick="this.classList.toggle('on')"></span></span></div>
+          <div class="settings-field"><span class="settings-field-label">设备踢出</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">移除其他设备</button></span></div>
+        </div>
+        <!-- Authorization -->
+        <div class="settings-section" id="sett-auth">
+          <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:1rem;">管理已授权的第三方应用和鉴权方访问权限</p>
+          <div class="settings-field"><span class="settings-field-label">DataBank 官方 App</span><span class="settings-field-right"><span class="settings-field-value">已授权 · 2026-06-12</span><button class="btn btn-outline btn-sm">撤销</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">Apple Health API</span><span class="settings-field-right"><span class="settings-field-value">已授权 · 2026-05-01</span><button class="btn btn-outline btn-sm">撤销</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">银行交易平台</span><span class="settings-field-right"><span class="settings-field-value">已授权 · 2026-06-16</span><button class="btn btn-outline btn-sm">撤销</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">API 密钥管理</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">生成新密钥</button></span></div>
+        </div>
+        <!-- Protocol Management -->
+        <div class="settings-section" id="sett-protocol">
+          <div class="settings-field"><span class="settings-field-label">数据存款协议 v2.1</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">数据理财协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">数据贷款协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">联合账户协议 v1.0</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">隐私政策 v3.2</span><span class="settings-field-right"><span class="settings-field-value" style="color:var(--emerald);">已同意</span><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">协议变更通知</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">查看更新</button></span></div>
+        </div>
+        <!-- Help -->
+        <div class="settings-section" id="sett-help">
+          <p style="font-size:0.84rem;color:var(--text-2);margin-bottom:1rem;">常见问题与帮助资源</p>
+          <div class="settings-field"><span class="settings-field-label">📖 用户操作指南</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">在线阅读</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">🎬 视频教程</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">观看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">❓ 常见问题 FAQ</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">查看</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">💬 在线客服</span><span class="settings-field-right"><button class="btn btn-primary btn-sm">联系客服</button></span></div>
+          <div class="settings-field"><span class="settings-field-label">🐛 问题反馈</span><span class="settings-field-right"><button class="btn btn-outline btn-sm">提交工单</button></span></div>
+        </div>
+        <!-- About -->
+        <div class="settings-section" id="sett-about">
+          <div class="settings-field"><span class="settings-field-label">平台版本</span><span class="settings-field-value mono">用户应用平台 v0.2.0-beta</span></div>
+          <div class="settings-field"><span class="settings-field-label">底层链</span><span class="settings-field-value">Substrate 联盟链 v1.3.0</span></div>
+          <div class="settings-field"><span class="settings-field-label">智能合约</span><span class="settings-field-value">ink! v4.2 · 协议账户合约 v2.1</span></div>
+          <div class="settings-field"><span class="settings-field-label">Token 合约</span><span class="settings-field-value">ERC-20 兼容 · 1 Token = 0.01 CNY</span></div>
+          <div class="settings-field"><span class="settings-field-label">隐私计算</span><span class="settings-field-value">TEE (Intel SGX) v0.5-beta</span></div>
+          <div class="settings-field"><span class="settings-field-label">DID 标准</span><span class="settings-field-value">W3C DID Core v1.0 + VC v1.0</span></div>
+          <div class="settings-field"><span class="settings-field-label">许可证</span><span class="settings-field-value mono">DataBank EULA v2.0</span></div>
+          <div class="settings-field"><span class="settings-field-label">开发团队</span><span class="settings-field-value">DataBank Engineering © 2026</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scanline"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">◈</div>
+    <div>
+      <div class="brand-text">DataBank</div>
+      <div class="brand-ver">用户应用平台</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">◉</span> 仪表盘
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-section">Core</div>
+    <div class="nav-item" data-page="accounts">
+      <span class="nav-icon">▣</span> 协议账户
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item" data-page="joint">
+      <span class="nav-icon">◎</span> 联合账户
+      <span class="nav-badge" style="background:var(--accent2-dim);color:var(--accent2)">新</span>
+    </div>
+    <div class="nav-item" data-page="deposit">
+      <span class="nav-icon">⬡</span> 数据存款
+    </div>
+    <div class="nav-item" data-page="sources">
+      <span class="nav-icon">⊞</span> 数据来源
+    </div>
+    <div class="nav-item" data-page="wealth">
+      <span class="nav-icon">◆</span> 数据理财
+      <span class="nav-badge" style="background:var(--accent2-dim);color:var(--accent2)">新</span>
+    </div>
+    <div class="nav-item" data-page="loan">
+      <span class="nav-icon">◇</span> 数据贷款
+      <span class="nav-badge" style="background:var(--accent2-dim);color:var(--accent2)">新</span>
+    </div>
+    <div class="nav-section">Trust</div>
+    <div class="nav-item" data-page="endorsers">
+      <span class="nav-icon">◇</span> 鉴权方网络
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-section">System</div>
+    <div class="nav-item" data-page="admin">
+      <span class="nav-icon">⚙</span> 管理后台
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip" onclick="openSettings()" style="cursor:pointer;">
+      <div class="user-avatar">AL</div>
+      <div class="user-info">
+        <div class="user-name">Alex Chen</div>
+        <div class="user-role">数据资产管理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+  <header class="topbar">
+    <span class="page-title" id="pageTitle">仪表盘</span>
+    <span class="breadcrumb">/ <span id="breadcrumbPage">仪表盘</span></span>
+    <div class="topbar-actions">
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span class="live-text">区块 <span class="live-block">#847,291</span></span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="goToOpenAccount()">+ 新建</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== PAGE: DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card accent">
+          <div class="kpi-label">数据资产总值</div>
+          <div class="kpi-value accent" data-count="2847350" data-prefix="¥">¥ 0</div>
+          <div class="kpi-change up">↑ 12.4% 本月</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">累计 Token 收益</div>
+          <div class="kpi-value amber" data-count="1284600">0</div>
+          <div class="kpi-change up">↑ 8.7% 本月</div>
+        </div>
+        <div class="kpi-card emerald">
+          <div class="kpi-label">活跃协议账户</div>
+          <div class="kpi-value emerald" data-count="12">0</div>
+          <div class="kpi-change">其中 9 个产生收益</div>
+        </div>
+        <div class="kpi-card accent2">
+          <div class="kpi-label">联合账户数</div>
+          <div class="kpi-value accent2" data-count="3">0</div>
+          <div class="kpi-change up">↑ 本月新增 1 个</div>
+        </div>
+      </div>
+
+      <div class="col-21">
+        <div class="chart-box">
+          <div class="chart-head">
+            <span class="card-title">Token 收益趋势（30 天）</span>
+            <span class="card-subtitle">单位: Token</span>
+          </div>
+          <div class="chart-inner" id="chart-revenue"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">最近交易</span><button class="btn btn-ghost btn-xs">全部</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>时间</th><th>类型</th><th>金额</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">14:32:08</td><td class="strong">数据使用 · 医疗健康</td><td class="mono up">+2,450</td></tr>
+                <tr><td class="mono">13:15:41</td><td class="strong">存款利息 · 活期</td><td class="mono up">+186</td></tr>
+                <tr><td class="mono">11:08:22</td><td class="strong">鉴权分润 · 设备商A</td><td class="mono up">+520</td></tr>
+                <tr><td class="mono">09:45:10</td><td class="strong">Token 兑换 · 法币</td><td class="mono down">-5,000</td></tr>
+                <tr><td class="mono">08:20:55</td><td class="strong">数据使用 · 大模型训练</td><td class="mono up">+8,100</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-2">
+        <div class="chart-box">
+          <div class="chart-head"><span class="card-title">数据资产分布</span></div>
+          <div class="chart-inner" id="chart-assets"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-head"><span class="card-title">24h 活跃使用方</span></div>
+          <div class="chart-inner" id="chart-dau"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: PROTOCOL ACCOUNTS ===== -->
+    <div class="page" id="page-accounts">
+      <div class="tabs">
+        <div class="tab active">全部账户</div>
+        <div class="tab">活跃 (9)</div>
+        <div class="tab">休眠 (3)</div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">账户总数</div><div class="kpi-value accent">12</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">活跃账户</div><div class="kpi-value emerald">9</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">本月新增</div><div class="kpi-value amber">2</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">有效许可证</div><div class="kpi-value accent2">24</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">协议账户列表</span>
+          <div style="display:flex;gap:0.5rem;">
+            <select class="form-select" onchange="filterAccounts(this.value)" style="width:140px;font-size:0.75rem;">
+              <option value="all">全部账户</option>
+              <option value="active">活跃</option>
+              <option value="dormant">休眠</option>
+              <option value="personal">个人</option>
+              <option value="family">家庭</option>
+              <option value="enterprise">企业</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="goToOpenAccount()">+ 新建账户</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>账户 ID</th><th>名称</th><th>类型</th><th>数据量</th><th>状态</th><th>所有权</th><th>许可证</th><th>累计收益</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr data-type="personal active">
+                <td class="mono">0x7a3b...c91f</td><td class="strong">个人健康数据</td><td>个人</td><td class="mono">2.4 GB</td>
+                <td><span class="badge badge-active">活跃</span></td><td class="mono">持有</td><td class="mono">3 有效</td>
+                <td class="mono up">45,200</td><td><button class="btn btn-ghost btn-xs" onclick="toggleAccountDetail(this.closest('tr'),'A1-01')">详情</button> <button class="btn btn-ghost btn-xs" style="color:var(--red);" onclick="terminateAccount('0x7a3b...c91f','个人健康数据')">解约</button></td>
+              </tr>
+              <tr data-type="enterprise active">
+                <td class="mono">0x3f8a...d62b</td><td class="strong">企业设备数据</td><td>企业</td><td class="mono">18.7 GB</td>
+                <td><span class="badge badge-active">活跃</span></td><td class="mono">持有</td><td class="mono">5 有效</td>
+                <td class="mono up">128,900</td><td><button class="btn btn-ghost btn-xs" onclick="toggleAccountDetail(this.closest('tr'),'B1-01')">详情</button> <button class="btn btn-ghost btn-xs" style="color:var(--red);" onclick="terminateAccount('0x3f8a...d62b','企业设备数据')">解约</button></td>
+              </tr>
+              <tr data-type="family dormant">
+                <td class="mono">0x5b1f...e83a</td><td class="strong">家庭能源数据</td><td>家庭</td><td class="mono">5.2 GB</td>
+                <td><span class="badge badge-dormant">休眠</span></td><td class="mono">持有</td><td class="mono">0 有效</td>
+                <td class="mono">3,200</td><td><button class="btn btn-amber btn-xs" onclick="wakeAccount('0x5b1f...e83a','家庭能源数据')">唤醒</button> <button class="btn btn-ghost btn-xs" style="color:var(--red);" onclick="terminateAccount('0x5b1f...e83a','家庭能源数据')">解约</button></td>
+              </tr>
+              <tr data-type="enterprise active">
+                <td class="mono">0x1d8c...f72e</td><td class="strong">产线传感器数据</td><td>企业</td><td class="mono">32.1 GB</td>
+                <td><span class="badge badge-active">活跃</span></td><td class="mono">持有</td><td class="mono">4 有效</td>
+                <td class="mono up">267,400</td><td><button class="btn btn-ghost btn-xs" onclick="toggleAccountDetail(this.closest('tr'),'B1-02')">详情</button> <button class="btn btn-ghost btn-xs" style="color:var(--red);" onclick="terminateAccount('0x1d8c...f72e','产线传感器数据')">解约</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 历史协议账户列表 -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">历史协议账户</span><span class="card-subtitle">已解约/已过期</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>账户 ID</th><th>名称</th><th>类型</th><th>解约时间</th><th>原因</th><th>累计收益</th><th>操作</th></tr></thead>
+            <tbody id="history-accounts-tbody">
+              <tr><td class="mono">0x9e2a...b41d</td><td>历史健康数据</td><td>个人</td><td class="mono">2026-05-20</td><td>用户主动解约</td><td class="mono">12,400</td><td><button class="btn btn-ghost btn-xs">查看详情</button></td></tr>
+              <tr><td class="mono">0x2f7c...a83e</td><td>旧版权数据</td><td>企业</td><td class="mono">2026-03-15</td><td>鉴权方退出</td><td class="mono">8,900</td><td><button class="btn btn-ghost btn-xs">查看详情</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 协议账户收益排名 -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">协议账户收益排名</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>排名</th><th>账户名称</th><th>类型</th><th>累计收益</th><th>综合置信度</th><th>收益系数</th><th>月均收益</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--amber);font-weight:700;">&#129351; 1</td><td>产线传感器数据</td><td>企业</td><td class="mono up">267,400</td><td>96%</td><td>&times;0.95</td><td class="mono">22,283</td></tr>
+              <tr><td style="color:var(--text-3);font-weight:700;">&#129352; 2</td><td>企业设备数据</td><td>企业</td><td class="mono up">128,900</td><td>88%</td><td>&times;0.85</td><td class="mono">10,741</td></tr>
+              <tr><td style="color:var(--amber-dim);font-weight:700;">&#129353; 3</td><td>个人健康数据</td><td>个人</td><td class="mono up">45,200</td><td>90%</td><td>&times;0.90</td><td class="mono">3,766</td></tr>
+              <tr><td>4</td><td>家庭能源数据</td><td>家庭</td><td class="mono">3,200</td><td>65%</td><td>&times;0.70</td><td class="mono">266</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">三权分立管理</span></div>
+        <div class="col-3">
+          <div class="card card-glass" style="border-color:rgba(0,212,255,0.2);cursor:pointer;" onclick="showTripleDetail('ownership')">
+            <h4 style="color:var(--accent);margin-bottom:0.5rem;">所有权令牌</h4>
+            <p style="font-size:0.8rem;color:var(--text-3);">绑定 DID，不可交易<br>当前持有: <strong style="color:var(--text);">12 枚</strong></p>
+          </div>
+          <div class="card card-glass" style="border-color:rgba(129,140,248,0.2);cursor:pointer;" onclick="showTripleDetail('usage')">
+            <h4 style="color:var(--accent2);margin-bottom:0.5rem;">使用权许可证</h4>
+            <p style="font-size:0.8rem;color:var(--text-3);">可出租，按时间/数据量<br>有效许可: <strong style="color:var(--text);">24 份</strong></p>
+          </div>
+          <div class="card card-glass" style="border-color:rgba(52,211,153,0.2);cursor:pointer;" onclick="showTripleDetail('revenue')">
+            <h4 style="color:var(--emerald);margin-bottom:0.5rem;">收益权凭证</h4>
+            <p style="font-size:0.8rem;color:var(--text-3);">可流转，ERC-20 标准<br>流通凭证: <strong style="color:var(--text);">8 份</strong></p>
+          </div>
+        </div>
+        <div id="triple-detail" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: JOINT ACCOUNTS ===== -->
+    <div class="page" id="page-joint">
+      <!-- Joint Account KPI Summary -->
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">联合账户总数</div><div class="kpi-value accent">4</div><div class="kpi-change">覆盖 4 个行业</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">账户总余额</div><div class="kpi-value emerald">¥35,500</div><div class="kpi-change">用户权益占比 80%</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">累计消费次数</div><div class="kpi-value amber">50</div><div class="kpi-change">本月新增 12 次</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">服务方累计收益</div><div class="kpi-value accent2">¥9,880</div><div class="kpi-change up">↑ 理发+健身+养老+医疗</div></div>
+      </div>
+
+      <!-- Service Type Tabs -->
+      <div class="tabs" id="joint-tabs">
+        <div class="tab active" data-joint="barber">理发 — 预付费次卡</div>
+        <div class="tab" data-joint="gym">健身 — 年卡消费</div>
+        <div class="tab" data-joint="elderly">养老 — 护理服务</div>
+        <div class="tab" data-joint="medical">医疗 — 健康管理</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="joint-title">理发店次卡 · 联合账户</span>
+          <span class="badge badge-active">链上运行中</span>
+        </div>
+        <p style="font-size:0.84rem;color:var(--text-3);margin-bottom:1.5rem;" id="joint-meta">
+          协议账户 ID: <code class="mono" style="color:var(--accent);background:var(--accent-dim);padding:0.15rem 0.5rem;border-radius:4px;">0x7a3c...d92f</code> &nbsp;|&nbsp;
+          创建: 2026-03-01 &nbsp;|&nbsp;
+          消费单价: ¥50/次
+        </p>
+        <p style="font-size:0.82rem;color:var(--text-2);margin-bottom:1.5rem;padding:0.6rem 0.8rem;background:var(--bg-elevated);border-radius:var(--radius-sm);" id="joint-desc">
+          用户预付 ¥500 存入联合账户，理发店作为服务方。每次理发作权益转移，银行鉴权分润。用户可随时退卡按比例返还。
+        </p>
+
+        <div class="joint-hero">
+          <div class="joint-visual">
+            <div class="donut-container">
+              <svg class="donut-svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" stroke-width="10"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--accent)" stroke-width="10"
+                  stroke-dasharray="263.89" stroke-dashoffset="52.78" stroke-linecap="round"
+                  id="donut-user"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--rose)" stroke-width="10"
+                  stroke-dasharray="263.89" stroke-dashoffset="211.11" stroke-linecap="round"
+                  id="donut-provider" transform="rotate(-64.8 50 50)"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--emerald)" stroke-width="10"
+                  stroke-dasharray="263.89" stroke-dashoffset="260.89" stroke-linecap="round"
+                  id="donut-bank" transform="rotate(-133.2 50 50)"/>
+              </svg>
+              <div class="donut-center">
+                <div class="total-label">账户余额</div>
+                <div class="total-value" id="joint-balance">¥500</div>
+              </div>
+            </div>
+            <div class="party-bars">
+              <div class="party-bar-row">
+                <span class="party-bar-label" style="color:var(--accent);">用户</span>
+                <div class="party-bar-track"><div class="party-bar-fill user" id="bar-user" style="width:80%;"></div></div>
+                <span class="party-bar-amount" id="amt-user">¥400.00</span>
+                <span class="party-bar-pct" id="pct-user">80%</span>
+              </div>
+              <div class="party-bar-row">
+                <span class="party-bar-label" style="color:var(--rose);" id="provider-label">理发店</span>
+                <div class="party-bar-track"><div class="party-bar-fill provider" id="bar-provider" style="width:20%;"></div></div>
+                <span class="party-bar-amount" id="amt-provider">¥100.00</span>
+                <span class="party-bar-pct" id="pct-provider">20%</span>
+              </div>
+              <div class="party-bar-row">
+                <span class="party-bar-label" style="color:var(--emerald);">银行</span>
+                <div class="party-bar-track"><div class="party-bar-fill bank" id="bar-bank" style="width:0%;"></div></div>
+                <span class="party-bar-amount" id="amt-bank">¥0.25</span>
+                <span class="party-bar-pct" id="pct-bank">&lt;1%</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="card" style="flex:1;">
+              <div class="card-header"><span class="card-title">消费模拟</span></div>
+              <p style="font-size:0.8rem;color:var(--text-3);margin-bottom:1rem;">已消费 <strong id="consume-count" style="color:var(--text);">5</strong> / <span id="max-count">10</span> 次</p>
+              <div class="consume-controls">
+                <button class="consume-btn" id="btn-single" onclick="simulateConsume(1)">刷 1 次<br><small style="font-size:0.7rem;opacity:0.7;" id="price-per-use">¥50</small></button>
+                <button class="consume-btn bulk" onclick="simulateConsume(3)">刷 3 次<br><small style="font-size:0.7rem;opacity:0.7;" id="price-per-use-bulk">¥150</small></button>
+                <button class="btn btn-outline btn-sm" onclick="resetConsumption()">重置</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">权益转移记录</span></div>
+              <div class="transfer-log" id="transfer-log">
+                <div class="transfer-item">
+                  <span class="transfer-time">15:42:18</span>
+                  <span class="transfer-desc">用户理发消费 (第5次)</span>
+                  <span class="transfer-amount in">→ 理发店 +¥49.50</span>
+                </div>
+                <div class="transfer-item">
+                  <span class="transfer-time">15:42:18</span>
+                  <span class="transfer-desc">鉴权分润</span>
+                  <span class="transfer-amount in">→ 银行 +¥0.50</span>
+                </div>
+                <div class="transfer-item">
+                  <span class="transfer-time">12:10:05</span>
+                  <span class="transfer-desc">用户理发消费 (第4次)</span>
+                  <span class="transfer-amount in">→ 理发店 +¥49.50</span>
+                </div>
+                <div class="transfer-item">
+                  <span class="transfer-time">12:10:05</span>
+                  <span class="transfer-desc">鉴权分润</span>
+                  <span class="transfer-amount in">→ 银行 +¥0.50</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="refund-calc" style="margin-top:1rem;">
+          <div class="card-header"><span class="card-title">退卡清算模拟器</span></div>
+          <div class="refund-slider-wrap">
+            <div class="refund-slider-label">
+              <span style="color:var(--text-3);">已消费次数</span>
+              <span style="font-family:'JetBrains Mono',monospace;color:var(--accent);" id="refund-count-label">5 次 (¥250)</span>
+            </div>
+            <input type="range" class="refund-slider" min="0" max="10" value="5" id="refund-slider" oninput="updateRefundCalc()">
+          </div>
+          <div class="refund-result">
+            <div class="refund-result-item">
+              <span class="refund-party">剩余总额</span>
+              <span class="refund-value" style="color:var(--text);font-size:0.9rem;" id="refund-total">¥250.00</span>
+            </div>
+            <div class="refund-result-item">
+              <span class="refund-party">用户应得 (<span id="refund-owner-pct">80</span>%)</span>
+              <span class="refund-value user" id="refund-user">¥200.00</span>
+            </div>
+            <div class="refund-result-item">
+              <span class="refund-party" id="refund-provider-label">理发店应得 (20%)</span>
+              <span class="refund-value provider" id="refund-provider">¥50.00</span>
+            </div>
+            <div class="refund-result-item">
+              <span class="refund-party">银行累计分润</span>
+              <span class="refund-value" style="color:var(--emerald);" id="refund-bank">¥2.50</span>
+            </div>
+          </div>
+          <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-primary btn-sm" onclick="simulateRefund()">执行退卡</button>
+            <button class="btn btn-outline btn-sm" onclick="openModal('new-joint')">+ 新建联合账户</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: DATA DEPOSIT v2 ===== -->
+    <div class="page" id="page-deposit">
+      <div class="tabs">
+        <div class="tab active">活期存款</div>
+        <div class="tab">定期存款</div>
+        <div class="tab">零存整取</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">活期存款笔数</div><div class="kpi-value accent">5</div><div class="kpi-change">年化 3.2%~6.0%</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">定期存款笔数</div><div class="kpi-value emerald">4</div><div class="kpi-change">年化 5.8%~8.5%</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">零存整取笔数</div><div class="kpi-value amber">2</div><div class="kpi-change">年化 8.5%~10.0%</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">累计存款利息</div><div class="kpi-value accent2" data-count="84700">0</div><div class="kpi-change up">↑ 本月 +4,200 Token</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">新建数据存款</span></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">存款类型</label>
+            <select class="form-select" id="deposit-type" onchange="updateDepositForm()">
+              <option value="current">活期存款 — 开放数据查询检索授权</option>
+              <option value="fixed">定期存款 — 一定期限内开放数据下载和分析授权</option>
+              <option value="installment">零存整取 — 增量自动存入，按定期结算</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">协议账户</label>
+            <select id="selected-protocol-account" class="form-select" style="width:100%;min-height:40px;" onchange="onProtocolAccountChange()">
+                <option value="">— 请选择协议账户 —</option>
+              </select>
+            <div id="protocol-account-info" style="display:none; margin-top:0.6rem; padding:0.5rem 0.8rem; background:var(--bg-root); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:0.72rem;">
+              <div id="protocol-account-detail" style="color:var(--text-2);"></div>
+            </div>
+<div id="data-dimensions-summary" style="display:none; margin-top:0.75rem; padding:0.6rem 1rem; background:var(--bg-root); border:1px solid var(--border); border-radius:var(--radius-sm); align-items:center; justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <span style="font-size:0.78rem; color:var(--text-2);">📊 数据维度</span>
+    <span style="font-size:0.82rem; font-weight:600; color:var(--accent);" id="dim-summary-count">0 / 0 已选</span>
+    <span style="font-size:0.75rem; color:var(--text-3);" id="dim-summary-volume">预估数据量: --</span>
+  </div>
+  <button class="btn btn-outline btn-sm" onclick="openDimensionsModal()" style="font-size:0.72rem;">选择维度 ▸</button>
+</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">授权级别</label>
+            <select class="form-select" id="auth-level">
+              <option value="query">查询检索 — 使用方可浏览摘要和统计特征</option>
+              <option value="download">下载分析 — 使用方可获取原始数据并建模</option>
+            </select>
+          </div>
+          <div class="form-group" id="deposit-term-group">
+            <label class="form-label">锁定期限</label>
+            <select class="form-select">
+              <option>3 个月 — 年化 5.8%</option>
+              <option>6 个月 — 年化 7.2%</option>
+              <option selected>12 个月 — 年化 8.5%</option>
+              <option>24 个月 — 年化 10.0%</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" id="increment-cycle-group" style="display:none;">
+            <label class="form-label">存入周期</label>
+            <select class="form-select">
+              <option>每日自动存入</option>
+              <option>每周自动存入</option>
+              <option>每月自动存入</option>
+            </select>
+          </div>
+          </div>
+        <div id="sports-data-extra" style="display:none; margin-top:0.75rem; padding:1rem; background:var(--bg-root); border:1px solid var(--border-glow); border-radius:var(--radius-sm);">
+          <div style="font-size:0.8rem; color:var(--accent); font-weight:600; margin-bottom:0.75rem;">🏃 运动数据专属信息</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">运动项目</label>
+              <select class="form-select" id="sport-type">
+                <option>跑步</option><option>游泳</option><option>骑行</option><option>健身训练</option><option>瑜伽</option><option>球类运动</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">数据采集设备</label>
+              <select class="form-select" id="sport-device">
+                <option>Garmin Forerunner 965</option>
+                <option>Apple Watch Ultra 2</option>
+                <option>Coros Pace 3</option>
+                <option>Whoop 4.0</option>
+                <option>Polar Vantage V3</option>
+                <option>Stryd 跑步功率计</option>
+                <option>NURVV 智能鞋垫</option>
+                <option>其他设备</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">数据所有者身体条件（供模型匹配）</label>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem;">
+                <input type="text" class="form-input" placeholder="身高(cm)" id="sport-height">
+                <input type="text" class="form-input" placeholder="体重(kg)" id="sport-weight">
+                <input type="text" class="form-input" placeholder="年龄" id="sport-age">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">运动水平</label>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                <input type="text" class="form-input" placeholder="跑龄/训龄(年)" id="sport-years">
+                <input type="text" class="form-input" placeholder="PB/最好成绩" id="sport-pb">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">数据包含维度（可多选，与上方数据来源联动）</label>
+              <div style="display:flex;flex-wrap:wrap;gap:0.4rem;font-size:0.78rem;">
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox" checked> 基础指标</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox" checked> 心率</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 呼吸</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 腿部发力</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 脚掌受力</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 手臂摆动</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 姿态</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 环境</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 生理响应</label>
+                <label style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;"><input type="checkbox"> 运动效果</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-hint" style="margin-top:0.5rem;font-size:0.75rem;color:var(--accent);">
+            💡 提示：运动数据维度越多，模型推理价值越高，存款利率上浮最高20%。建议开放"下载分析"授权以获得更高利率。
+          </div>
+        </div>
+        <div class="form-hint" style="margin-bottom:0.5rem;">
+          <strong id="dormancy-hint">休眠规则：若连续 12 个月无使用方查询/检索，利率自动归零。恢复查询后利率恢复。</strong>
+        </div>
+        <div style="display:flex;gap:0.75rem;">
+          <button class="btn btn-primary" onclick="handleDepositSubmit()">确认存入</button>
+          <button class="btn btn-outline">取消</button>
+        </div>
+      </div>
+
+      <div class="col-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">利率行情（含休眠规则）</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>存款类型</th><th>授权范围</th><th>期限</th><th>年化利率</th><th>休眠惩罚</th></tr></thead>
+              <tbody>
+                <tr><td class="strong">活期存款</td><td>查询/检索</td><td>随时存取</td><td class="mono" style="color:var(--accent);">3.2%~6.0%</td><td><span style="color:var(--red);">利率归零</span></td></tr>
+                <tr><td class="strong">定期存款</td><td>下载/分析</td><td>3 个月</td><td class="mono" style="color:var(--accent);">5.8%</td><td><span style="color:var(--amber);">利率 50%</span></td></tr>
+                <tr><td class="strong">定期存款</td><td>下载/分析</td><td>6 个月</td><td class="mono" style="color:var(--accent);">7.2%</td><td><span style="color:var(--amber);">利率 50%</span></td></tr>
+                <tr><td class="strong">定期存款</td><td>下载/分析</td><td>12 个月</td><td class="mono" style="color:var(--accent);">8.5%</td><td><span style="color:var(--amber);">利率 50%</span></td></tr>
+                <tr><td class="strong">零存整取</td><td>下载/分析</td><td>12 个月</td><td class="mono" style="color:var(--amber);">8.5%~10.0%</td><td><span style="color:var(--amber);">利率 50%</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">存款记录</span><span class="card-subtitle">含休眠状态监控</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>存款 ID</th><th>数据源</th><th>类型</th><th>数据量</th><th>利率</th><th>末次使用</th><th>休眠</th><th>到期</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">DEP-0042</td><td class="strong">B1 企业设备运行数据</td><td>定期 12月</td><td class="mono">18.7 GB</td><td class="mono">8.5%</td><td class="mono">2026-06-10</td>
+                <td style="color:var(--emerald);">5天前</td><td class="mono">2027-03-15</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0041</td><td class="strong">A2 房产信息</td><td>定期 6月</td><td class="mono">3.2 GB</td><td class="mono">7.2%</td><td class="mono">2026-06-14</td>
+                <td style="color:var(--emerald);">1天前</td><td class="mono">2026-12-14</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0040</td><td class="strong">D1 App使用习惯数据</td><td>零存整取</td><td class="mono">42.3 GB</td><td class="mono">9.5%</td><td class="mono">2026-06-14</td>
+                <td style="color:var(--emerald);">1天前</td><td class="mono">2027-01-01</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0039</td><td class="strong">C2 音乐作品版权</td><td>定期 12月</td><td class="mono">8.6 GB</td><td class="mono">8.5%</td><td class="mono">2026-06-12</td>
+                <td style="color:var(--emerald);">3天前</td><td class="mono">2027-06-12</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0038</td><td class="strong">A1 个人健康数据</td><td>活期</td><td class="mono">2.4 GB</td><td class="mono">3.2%</td><td class="mono">2026-06-01</td>
+                <td style="color:var(--amber);">14天前</td><td class="mono">—</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0037</td><td class="strong">A4 纳税记录</td><td>活期</td><td class="mono">1.1 GB</td><td class="mono">4.0%</td><td class="mono">2026-06-08</td>
+                <td style="color:var(--amber);">7天前</td><td class="mono">—</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0036</td><td class="strong">B3 合同往来数据</td><td>定期 6月</td><td class="mono">5.8 GB</td><td class="mono">7.2%</td><td class="mono">2026-05-20</td>
+                <td style="color:var(--amber);">26天前</td><td class="mono">2026-11-20</td><td><span class="badge badge-active">存续</span></td>
+              </tr>
+              <tr>
+                <td class="mono">DEP-0029</td><td class="strong">E2 历史气象数据</td><td>活期</td><td class="mono">5.1 GB</td><td class="mono" style="color:var(--red);">0.0%</td><td class="mono">2025-03-20</td>
+                <td style="color:var(--red);">15个月前</td><td class="mono">—</td><td><span class="badge badge-dormant">利率归零</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: DATA WEALTH ===== -->
+    <div class="page" id="page-wealth">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">理财包总数</div><div class="kpi-value accent">4</div><div class="kpi-change">预期总收益 ¥120K</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">已认购</div><div class="kpi-value emerald">3</div><div class="kpi-change">认购率 75%</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">累计下载量</div><div class="kpi-value amber">62 GB</div><div class="kpi-change">Token 结算 31,000</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">平均年化收益</div><div class="kpi-value accent2">11.25%</div><div class="kpi-change up">↑ 高于存款均值</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">专项数据理财包</span><button class="btn btn-primary btn-sm" onclick="openModal('new-wealth')">+ 发起理财包</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>理财包名称</th><th>数据范围</th><th>锁定期</th><th>预期年化</th><th>数据量</th><th>Token/GB</th><th>认购状态</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="strong">XX靶向药疗效 3个月数据理财</td><td>靶向药 II 期临床试验，患者反应数据（脱敏）</td><td class="mono">3 个月</td>
+                <td class="mono" style="color:var(--amber);">12%</td><td class="mono">15 GB</td><td class="mono" style="color:var(--amber);">2,000</td>
+                <td><span class="badge badge-active">已认购</span></td>
+              </tr>
+              <tr>
+                <td class="strong">运动与饮食对睡眠的影响</td><td>可穿戴设备用户群体的运动+饮食+睡眠关联数据</td><td class="mono">6 个月</td>
+                <td class="mono" style="color:var(--accent);">8%</td><td class="mono">8 GB</td><td class="mono" style="color:var(--accent);">500</td>
+                <td><span class="badge badge-active">已认购</span></td>
+              </tr>
+              <tr>
+                <td class="strong">新能源车冬季续航衰减</td><td>某车企冬季 3 个月多车型续航实测数据（含温控）</td><td class="mono">3 个月</td>
+                <td class="mono" style="color:var(--amber);">15%</td><td class="mono">22 GB</td><td class="mono" style="color:var(--amber);">2,000</td>
+                <td><span class="badge badge-active">已认购</span></td>
+              </tr>
+              <tr>
+                <td class="strong">零售消费趋势季度数据</td><td>某连锁超市 50 门店季度 POS 交易数据（脱敏）</td><td class="mono">6 个月</td>
+                <td class="mono" style="color:var(--accent);">10%</td><td class="mono">30 GB</td><td class="mono" style="color:var(--accent);">500</td>
+                <td><span class="badge badge-pending">待认购</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">理财认购流程</span></div>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.82rem;color:var(--text-2);">
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#050a14;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;">1</span> 数据所有方发起理财包 → 银行审核</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;">2</span> 银行确定预期收益率 → 挂牌上架</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:22px;height:22px;border-radius:50%;background:var(--amber);color:#050a14;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;">3</span> 使用方浏览/认购 → 下载数据</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:22px;height:22px;border-radius:50%;background:var(--emerald);color:#050a14;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;">4</span> Token 按下载量结算 → 锁定期结束分账</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">我的理财收益汇总</span></div>
+          <div style="display:flex;flex-direction:column;gap:0.8rem;">
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">靶向药疗效数据</span><span class="mono" style="color:var(--emerald);">+ ¥18,000</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">运动饮食数据</span><span class="mono" style="color:var(--emerald);">+ ¥4,000</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">新能源续航数据</span><span class="mono" style="color:var(--emerald);">+ ¥33,000</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;font-weight:600;">
+              <span style="color:var(--text);">合计</span><span class="mono" style="color:var(--accent);font-size:1.1rem;">¥55,000</span>
+            </div>
+          </div>
+          <p style="font-size:0.74rem;color:var(--text-3);margin-top:0.5rem;">分账：数据所有方 75% + 鉴权方 15% + 银行 10%</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-header"><span class="card-title">理财下载记录</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>时间</th><th>理财包</th><th>使用方</th><th>下载量</th><th>Token结算</th><th>我的收益</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">2026-06-12 14:30</td><td class="strong">XX靶向药疗效</td><td>某药企研究部</td><td class="mono">5.2 GB</td><td class="mono">10,400</td><td class="mono" style="color:var(--emerald);">¥7,800</td><td><span class="badge badge-active">已结算</span></td></tr>
+              <tr><td class="mono">2026-06-08 09:15</td><td class="strong">新能源续航</td><td>某车企研究院</td><td class="mono">12.8 GB</td><td class="mono">25,600</td><td class="mono" style="color:var(--emerald);">¥19,200</td><td><span class="badge badge-active">已结算</span></td></tr>
+              <tr><td class="mono">2026-06-03 16:42</td><td class="strong">运动饮食数据</td><td>某健康科技公司</td><td class="mono">3.1 GB</td><td class="mono">1,550</td><td class="mono" style="color:var(--emerald);">¥1,163</td><td><span class="badge badge-active">已结算</span></td></tr>
+              <tr><td class="mono">2026-05-28 11:08</td><td class="strong">XX靶向药疗效</td><td>某CRO机构</td><td class="mono">3.8 GB</td><td class="mono">7,600</td><td class="mono" style="color:var(--emerald);">¥5,700</td><td><span class="badge badge-active">已结算</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: DATA LOAN ===== -->
+    <div class="page" id="page-loan">
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">贷款申请数</div><div class="kpi-value accent">2</div><div class="kpi-change">本月新增 1 笔</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">已发放贷款</div><div class="kpi-value emerald">1</div><div class="kpi-change">额度 ¥75,000</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">待审核</div><div class="kpi-value amber">1</div><div class="kpi-change">数据估值进行中</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">质押数据估值</div><div class="kpi-value accent2">¥152K</div><div class="kpi-change">质押率 50%</div></div>
+      </div>
+
+      <div class="col-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">发起数据贷款申请</span></div>
+          <div class="form-group">
+            <label class="form-label">选择质押数据范围</label>
+            <select class="form-select">
+              <option>企业设备数据 (18.7 GB, 历史月收益 ¥4,200)</option>
+              <option>产线传感器数据 (32.1 GB, 历史月收益 ¥8,900)</option>
+              <option>个人健康数据 (2.4 GB, 历史月收益 ¥1,500)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">贷款金额 (Token)</label>
+              <input class="form-input" type="number" placeholder="最高可贷 ¥45,000" value="30000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">贷款期限</label>
+              <select class="form-select">
+                <option>3 个月 — 年化 6%</option>
+                <option selected>6 个月 — 年化 8%</option>
+                <option>12 个月 — 年化 10%</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">贷款用途</label>
+            <input class="form-input" placeholder="如：桥接融资、设备采购、研发投入">
+          </div>
+          <div class="form-hint" style="margin-bottom:0.5rem;">
+            <strong>质押率:</strong> 50% | <strong>还款:</strong> 数据收益自动抵扣本息 | <strong>清算线:</strong> 估值跌至贷款额 110%
+          </div>
+          <div style="display:flex;gap:0.75rem;">
+            <button class="btn btn-primary" onclick="showToast('success','贷款申请已提交，银行将在1个工作日内完成数据估值')">提交申请</button>
+            <button class="btn btn-outline">取消</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">风控参数</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>参数</th><th>值</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td class="strong">质押率</td><td class="mono" style="color:var(--accent);">50%</td><td>¥10,000 估值 → 最高贷 ¥5,000</td></tr>
+                <tr><td class="strong">预警线</td><td class="mono" style="color:var(--amber);">120%</td><td>估值跌至贷款额 120% 触发预警</td></tr>
+                <tr><td class="strong">清算线</td><td class="mono" style="color:var(--red);">110%</td><td>估值跌至贷款额 110% 触发清算</td></tr>
+                <tr><td class="strong">还款方式</td><td class="mono">自动抵扣</td><td>数据收益先进入还款池</td></tr>
+                <tr><td class="strong">违约后果</td><td class="mono" style="color:var(--red);">收益权转移</td><td>到期未还 → 银行挂牌出售</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">贷款记录</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>贷款 ID</th><th>质押数据</th><th>贷款额</th><th>利率</th><th>期限</th><th>已还/总</th><th>清算风险</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">LOAN-0082</td><td class="strong">产线传感器数据</td><td class="mono">¥75,000</td><td class="mono">8%</td><td class="mono">6 个月</td>
+                <td class="mono">¥18,500 / ¥78,000</td><td style="color:var(--emerald);">安全(估值 ¥142K)</td>
+                <td><span class="badge badge-active">还款中</span></td>
+              </tr>
+              <tr>
+                <td class="mono">LOAN-0081</td><td class="strong">个人健康数据</td><td class="mono">¥8,000</td><td class="mono">10%</td><td class="mono">3 个月</td>
+                <td class="mono">¥8,240 / ¥8,240</td><td style="color:var(--emerald);">—</td>
+                <td><span class="badge badge-dormant">已还清</span></td>
+              </tr>
+              <tr>
+                <td class="mono">LOAN-0083</td><td class="strong">企业设备数据</td><td class="mono">¥45,000</td><td class="mono">6%</td><td class="mono">12 个月</td>
+                <td class="mono">¥0 / ¥47,700</td>
+                <td style="color:var(--amber);">关注(估值 ¥58K)</td>
+                <td><span class="badge badge-pending">待放款</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-2" style="margin-top:1rem;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">还款计划 (LOAN-0082)</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>期数</th><th>应还日期</th><th>应还本息</th><th>实还金额</th><th>来源</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">1/6</td><td class="mono">2026-07-15</td><td class="mono">¥13,000</td><td class="mono">¥13,000</td><td>数据收益抵扣</td><td><span class="badge badge-active">已还</span></td></tr>
+                <tr><td class="mono">2/6</td><td class="mono">2026-08-15</td><td class="mono">¥13,000</td><td class="mono">¥5,500</td><td>数据收益抵扣</td><td><span class="badge badge-pending">部分</span></td></tr>
+                <tr style="background:var(--accent-dim);"><td class="mono">3/6</td><td class="mono">2026-09-15</td><td class="mono">¥13,000</td><td class="mono">—</td><td>—</td><td><span style="color:var(--accent);">本期</span></td></tr>
+                <tr><td class="mono">4/6</td><td class="mono">2026-10-15</td><td class="mono">¥13,000</td><td class="mono">—</td><td>—</td><td><span style="color:var(--text-3);">待还</span></td></tr>
+                <tr><td class="mono">5/6</td><td class="mono">2026-11-15</td><td class="mono">¥13,000</td><td class="mono">—</td><td>—</td><td><span style="color:var(--text-3);">待还</span></td></tr>
+                <tr><td class="mono">6/6</td><td class="mono">2026-12-15</td><td class="mono">¥13,000</td><td class="mono">—</td><td>—</td><td><span style="color:var(--text-3);">待还</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">质押数据估值走势</span></div>
+          <div style="display:flex;flex-direction:column;gap:0.8rem;font-size:0.84rem;">
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">初始估值</span><span class="mono" style="color:var(--accent);">¥150,000</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">当前估值</span><span class="mono" style="color:var(--emerald);">¥142,000</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">贷款余额</span><span class="mono" style="color:var(--amber);">¥59,500</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);">
+              <span style="color:var(--text-3);">质押率</span><span class="mono">41.9%</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;">
+              <span style="color:var(--text-3);">安全边际</span><span class="mono" style="color:var(--emerald);">¥82,500</span>
+            </div>
+          </div>
+          <p style="font-size:0.74rem;color:var(--text-3);margin-top:0.6rem;">预警触发价: ¥71,400 | 清算触发价: ¥65,450</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: ENDORSERS ===== -->
+    <div class="page" id="page-endorsers">
+      <!-- My Endorser Status -->
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">我的鉴权方状态</div><div class="kpi-value accent">Apple Health</div><div class="kpi-change">AAA 级 · 已认证</div></div>
+        <div class="kpi-card emerald"><div class="kpi-label">累计鉴权收益</div><div class="kpi-value emerald">112.4K</div><div class="kpi-change up">↑ 本月 +8,200 Token</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">累计背书次数</div><div class="kpi-value amber">2,350</div><div class="kpi-change">纠纷率 0.3%</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">当前质押</div><div class="kpi-value accent2">100K</div><div class="kpi-change">质押率 48%</div></div>
+      </div>
+
+      <!-- Endorser Tabs -->
+      <div class="tabs" id="endorser-tabs" style="margin-bottom:1rem;">
+        <div class="tab active" data-endorser="my-cert">我的认证</div>
+        <div class="tab" data-endorser="my-revenue">收益明细</div>
+        <div class="tab" data-endorser="network">鉴权方网络</div>
+        <div class="tab" data-endorser="history">背书历史</div>
+      </div>
+
+      <!-- Tab: 我的认证 -->
+      <div id="endorser-tab-my-cert">
+        <div class="col-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">我的认证管理</span><button class="btn btn-outline btn-sm" onclick="openModal('renew-cert')">更新认证</button></div>
+            <div style="display:flex;flex-direction:column;gap:0.8rem;font-size:0.84rem;">
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">认证类型</span><span class="strong">设备数据鉴权 (IoT Health)</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">置信度评分</span><span style="color:var(--emerald);font-weight:600;">94 / 100</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">认证有效期</span><span class="mono">2026-01-01 ~ 2027-01-01</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">覆盖数据源</span><span class="mono">个人健康 / 运动数据 / 睡眠数据</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;"><span style="color:var(--text-3);">评级</span><span class="badge badge-aaa" style="font-size:0.75rem;">AAA</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">申请接入鉴权方网络</span></div>
+            <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:1rem;">成为 DataBank 鉴权方后，您可以为数据存款/理财/贷款产品提供数据真实性背书，并按约定比例获得分润收益。</p>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">机构/企业名称</label><input class="form-input" placeholder="请输入机构完整名称"></div>
+              <div class="form-group"><label class="form-label">鉴权类型</label><select class="form-select"><option>IoT 设备数据鉴权</option><option>医疗健康数据鉴权</option><option>企业运营数据鉴权</option><option>金融交易数据鉴权</option><option>环境监测数据鉴权</option></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">质押 Token 数量</label><input class="form-input" type="number" placeholder="最低质押 50,000 Token" value="50000"></div>
+              <div class="form-group"><label class="form-label">认证材料</label><input class="form-input" type="file" style="padding:0.4rem 0;" multiple></div>
+            </div>
+            <div class="form-hint" style="margin-bottom:0.75rem;">提交后将由银行审核，审核周期 3-5 个工作日。</div>
+            <button class="btn btn-primary" onclick="showToast('success','鉴权方接入申请已提交，请等待银行审核')">提交申请</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: 收益明细 -->
+      <div id="endorser-tab-my-revenue" style="display:none;">
+        <div class="col-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">收益汇总</span></div>
+            <div style="display:flex;flex-direction:column;gap:0.8rem;font-size:0.84rem;">
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">本月收益</span><span class="mono" style="color:var(--emerald);font-size:1.1rem;font-weight:600;">8,200 Token</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">累计收益</span><span class="mono" style="color:var(--accent);">112,400 Token</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">存款鉴权分润</span><span class="mono">45,200</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border-faint);"><span style="color:var(--text-3);">理财鉴权分润</span><span class="mono">38,600</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.5rem 0;"><span style="color:var(--text-3);">模型鉴权分润</span><span class="mono">28,600</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">收益明细</span><button class="btn btn-outline btn-sm">导出</button></div>
+            <div style="max-height:200px;overflow-y:auto;">
+              <div class="transfer-log">
+                <div class="transfer-item"><span class="transfer-time">06-15 09:42</span><span class="transfer-desc">设备故障预测模型 · 鉴权分润</span><span class="transfer-amount in">+ 1,240 Token</span></div>
+                <div class="transfer-item"><span class="transfer-time">06-14 16:18</span><span class="transfer-desc">运动饮食理财包 · 鉴权分润</span><span class="transfer-amount in">+ 860 Token</span></div>
+                <div class="transfer-item"><span class="transfer-time">06-14 10:05</span><span class="transfer-desc">个人健康存款 · 鉴权分润</span><span class="transfer-amount in">+ 320 Token</span></div>
+                <div class="transfer-item"><span class="transfer-time">06-13 14:30</span><span class="transfer-desc">临床试验数据 · 鉴权分润</span><span class="transfer-amount in">+ 2,100 Token</span></div>
+                <div class="transfer-item"><span class="transfer-time">06-12 09:00</span><span class="transfer-desc">新能源续航数据 · 鉴权分润</span><span class="transfer-amount in">+ 1,680 Token</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: 鉴权方网络 -->
+      <div id="endorser-tab-network" style="display:none;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">鉴权方网络</span><div style="display:flex;gap:0.5rem;"><button class="btn btn-outline btn-sm">筛选</button><button class="btn btn-outline btn-sm" onclick="openModal('endorser-detail')">查看详情</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>鉴权方</th><th>类型</th><th>置信度</th><th>质押</th><th>背书次数</th><th>纠纷率</th><th>累计分润</th><th>评级</th></tr></thead><tbody>
+            <tr style="background:var(--accent-dim);"><td class="strong">Apple Health (我)</td><td>设备商</td><td><strong style="color:var(--emerald);">94</strong></td><td class="mono">100K</td><td class="mono">2,350</td><td class="mono" style="color:var(--emerald);">0.3%</td><td class="mono up">112.4K</td><td><span class="badge badge-aaa">AAA</span></td></tr>
+            <tr><td class="strong">国家电网</td><td>机构</td><td><strong style="color:var(--emerald);">96</strong></td><td class="mono">120K</td><td class="mono">1,840</td><td class="mono" style="color:var(--emerald);">0.1%</td><td class="mono up">86.2K</td><td><span class="badge badge-aaa">AAA</span></td></tr>
+            <tr><td class="strong">小米 IoT</td><td>设备商</td><td><strong style="color:var(--accent);">88</strong></td><td class="mono">80K</td><td class="mono">1,620</td><td class="mono" style="color:var(--amber);">0.8%</td><td class="mono up">58.1K</td><td><span class="badge badge-aa">AA</span></td></tr>
+            <tr><td class="strong">SGS 检测认证</td><td>检测机构</td><td><strong style="color:var(--amber);">72</strong></td><td class="mono">50K</td><td class="mono">890</td><td class="mono" style="color:var(--amber);">1.5%</td><td class="mono up">24.3K</td><td><span class="badge badge-pending">A</span></td></tr>
+          </tbody></table></div>
+        </div>
+      </div>
+
+      <!-- Tab: 背书历史 -->
+      <div id="endorser-tab-history" style="display:none;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">背书历史记录</span></div>
+          <div class="table-wrap"><table><thead><tr><th>时间</th><th>数据所有方</th><th>数据类型</th><th>背书内容</th><th>鉴权结果</th><th>分润</th></tr></thead><tbody>
+            <tr><td class="mono">06-15 10:35</td><td>张明</td><td>个人健康数据</td><td>Apple Watch心率数据真实性</td><td><span class="badge badge-active">通过</span></td><td class="mono">+120 Token</td></tr>
+            <tr><td class="mono">06-14 15:20</td><td>某药企</td><td>临床试验III期</td><td>数据采集合规性</td><td><span class="badge badge-active">通过</span></td><td class="mono">+2,100 Token</td></tr>
+            <tr><td class="mono">06-13 09:00</td><td>王磊</td><td>运动睡眠数据</td><td>Apple Watch运动数据</td><td><span class="badge badge-active">通过</span></td><td class="mono">+80 Token</td></tr>
+            <tr><td class="mono">06-12 14:15</td><td>某车企</td><td>新能源续航</td><td>车辆终端数据来源</td><td><span class="badge badge-active">通过</span></td><td class="mono">+1,680 Token</td></tr>
+            <tr><td class="mono">06-11 11:40</td><td>李华</td><td>个人健康数据</td><td>Apple Watch心率数据</td><td><span class="badge badge-pending">待确认</span></td><td class="mono">—</td></tr>
+          </tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: 数据来源 ===== -->
+    <div class="page" id="page-sources" style="padding-bottom:1rem;">
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+          <h2 style="font-size:1.3rem;font-weight:600;color:var(--text);margin:0;">⊞ 数据来源</h2>
+          <div style="display:flex;align-items:center;gap:0.5rem;" id="sources-role-indicator">
+            <span style="font-size:0.72rem;color:var(--text-3);">当前角色:</span>
+            <span class="badge" style="background:var(--accent-dim);color:var(--accent);padding:0.3rem 0.8rem;font-size:0.75rem;font-weight:600;" id="current-role-badge">👤 个人</span>
+            <span class="chip active" onclick="switchRole('personal',this)" style="cursor:pointer;" id="chip-personal">👤 个人 (<span id="chip-personal-count">0/0</span>)</span>
+            <span class="chip" onclick="switchRole('family',this)" style="cursor:pointer;" id="chip-family">👨‍👩‍👧 家庭 (<span id="chip-family-count">0/0</span>)</span>
+            <span class="chip" onclick="switchRole('enterprise',this)" style="cursor:pointer;" id="chip-enterprise">🏢 企业 (<span id="chip-enterprise-count">0/0</span>)</span>
+          </div>
+          <input type="text" id="sources-search" placeholder="🔍 搜索数据来源..." oninput="filterSourcesBySearch()" style="width:200px;padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.78rem;background:var(--bg-root);color:var(--text);">
+        </div>
+      </div>
+
+      <!-- 操作栏 -->
+      <div style="display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:0.8rem;margin-bottom:0.5rem;font-size:0.75rem;">
+        <span style="color:var(--text-3);">已选 <strong style="color:var(--accent);" id="sources-selected-count">0</strong> 项</span>
+        <button class="btn btn-outline btn-sm" onclick="goToDimensionsFromSources()" style="font-size:0.7rem;" id="btn-go-dimensions" disabled>📊 选择维度</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmSourcesAndReturn()" style="font-size:0.7rem;">✓ 完成选择</button>
+      </div>
+
+      <!-- 自动协议账户预览 -->
+      <div id="sources-auto-accounts" style="display:none; margin-bottom:1rem; padding:1rem; background:var(--accent-dim); border:1px solid var(--border-glow); border-radius:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+          <span style="font-size:0.82rem;font-weight:600;color:var(--accent);">⚡ 选择数据来源将签订多方协议账户</span>
+          <span style="font-size:0.7rem;color:var(--text-3);">数据所有方 ↔ 多个鉴权方 ↔ 银行</span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-2);margin-bottom:0.5rem;">
+          每选择一个数据来源，系统将签订<strong>一份多方协议账户</strong>，该来源的所有鉴权方（已接入+手动上传）作为联合背书方共同参与。综合置信度由各鉴权方加权计算。
+        </div>
+        <div id="sources-auto-accounts-list" style="display:flex;flex-direction:column;gap:0.5rem;">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+
+      <!-- 数据来源卡片列表 -->
+      <div id="sources-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;">
+        <!-- 动态渲染 -->
+      </div>
+    </div>
+
+    <!-- ===== PAGE: ADMIN ===== -->
+    <div class="page" id="page-admin">
+      <div class="kpi-grid">
+        <div class="kpi-card emerald"><div class="kpi-label">系统可用性</div><div class="kpi-value emerald">99.99%</div><div class="kpi-change">最近 30 天</div></div>
+        <div class="kpi-card accent"><div class="kpi-label">P99 结算延迟</div><div class="kpi-value accent">387ms</div><div class="kpi-change up">↓ 改善 12ms</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">待处理告警</div><div class="kpi-value amber">2</div><div class="kpi-change">P3 级别</div></div>
+        <div class="kpi-card accent2"><div class="kpi-label">链上交易 24h</div><div class="kpi-value accent2">48.3K</div><div class="kpi-change up">↑ 5.2%</div></div>
+      </div>
+      <div class="col-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">节点状态</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>节点</th><th>角色</th><th>高度</th><th>延迟</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">node-01</td><td class="strong">验证节点</td><td class="mono">847,291</td><td class="mono">12ms</td><td><span class="badge badge-active">在线</span></td></tr>
+                <tr><td class="mono">node-02</td><td class="strong">验证节点</td><td class="mono">847,291</td><td class="mono">18ms</td><td><span class="badge badge-active">在线</span></td></tr>
+                <tr><td class="mono">node-03</td><td class="strong">验证节点</td><td class="mono">847,291</td><td class="mono">15ms</td><td><span class="badge badge-active">在线</span></td></tr>
+                <tr><td class="mono">node-reg</td><td class="strong">监管节点</td><td class="mono">847,291</td><td class="mono">22ms</td><td><span class="badge badge-active">在线</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">最近告警</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>时间</th><th>级别</th><th>描述</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">12:08</td><td><span class="badge badge-pending">P3</span></td><td class="strong">Kafka 分区延迟 2.3s</td></tr>
+                <tr><td class="mono">09:42</td><td><span class="badge badge-pending">P3</span></td><td class="strong">Redis 内存 78%</td></tr>
+                <tr><td class="mono">昨日</td><td><span class="badge badge-active">已解决</span></td><td class="strong">TEE 节点证书过期</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">用户管理</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>用户</th><th>DID</th><th>角色</th><th>账户数</th><th>注册</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">Alex Chen</td><td class="mono">did:db:0x7a3b...</td><td>管理员</td><td class="mono">3</td><td class="mono">2025-06-01</td><td><span class="badge badge-active">活跃</span></td><td><button class="btn btn-ghost btn-xs">管理</button></td></tr>
+              <tr><td class="strong">张明</td><td class="mono">did:db:0x9e2c...</td><td>所有方</td><td class="mono">2</td><td class="mono">2025-08-15</td><td><span class="badge badge-active">活跃</span></td><td><button class="btn btn-ghost btn-xs">管理</button></td></tr>
+              <tr><td class="strong">某制造企业</td><td class="mono">did:db:0x3f8a...</td><td>所有方</td><td class="mono">5</td><td class="mono">2025-07-20</td><td><span class="badge badge-active">活跃</span></td><td><button class="btn btn-ghost btn-xs">管理</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ===== MODAL: CREATE ACCOUNT ===== -->
+<div class="modal-overlay" id="modal-create-account">
+  <div class="modal">
+    <h3>新建协议账户</h3>
+    <div class="form-group">
+      <label class="form-label">账户名称</label>
+      <input class="form-input" placeholder="如：个人健康数据账户">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">账户类型</label>
+        <select class="form-select">
+          <option>个人数据账户</option><option>企业数据账户</option>
+          <option>家庭数据账户</option><option>数据资产池</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">数据分类</label>
+        <select class="form-select">
+          <option>健康医疗</option><option>消费行为</option>
+          <option>设备运行</option><option>能源环境</option><option>金融信用</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">初始鉴权方</label>
+      <select class="form-select">
+        <option>暂不指定</option>
+        <option>Apple Health (94)</option>
+        <option>国家电网 (96)</option>
+        <option>小米 IoT (88)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('create-account')">取消</button>
+      <button class="btn btn-primary" onclick="closeModal('create-account');showToast('success','协议账户创建成功！链上 ID: 0x' + Math.random().toString(16).slice(2,10)+'...')">创建账户</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NEW JOINT ACCOUNT ===== -->
+<div class="modal-overlay" id="modal-new-joint">
+  <div class="modal">
+    <h3>新建联合账户 · 预付费消费</h3>
+    <div class="form-group">
+      <label class="form-label">消费场景</label>
+      <select class="form-select">
+        <option>健身房年卡</option><option>教育培训</option>
+        <option>美容美发</option><option>共享办公</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">存入金额 (¥)</label>
+        <input class="form-input" type="number" value="5000" placeholder="5000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">消费单价 (¥/次)</label>
+        <input class="form-input" type="number" value="50" placeholder="50">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">用户初始权益</label>
+        <select class="form-select">
+          <option>80%</option><option>70%</option><option>60%</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">鉴权方</label>
+        <select class="form-select">
+          <option>招商银行 (95)</option><option>工商银行 (97)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">有效期</label>
+      <select class="form-select">
+        <option>12 个月</option><option>6 个月</option><option>24 个月</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('new-joint')">取消</button>
+      <button class="btn btn-primary" onclick="closeModal('new-joint')">创建联合账户</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DIMENSIONS MODAL ===== -->
+<div class="modal-overlay" id="modal-dimensions">
+  <div class="modal-container" style="max-width:680px; max-height:85vh; overflow-y:auto;">
+    <div class="modal-header">
+      <span class="modal-title">📊 数据维度选择</span>
+      <span class="modal-close" onclick="closeDimensionsModal()">×</span>
+    </div>
+    <div style="padding:0.5rem 1.2rem; border-bottom:1px solid var(--border); display:flex;align-items:center;gap:1rem;font-size:0.78rem;">
+      <label style="display:flex;align-items:center;gap:0.4rem;color:var(--accent);cursor:pointer;">
+        <input type="checkbox" id="dim-modal-select-all" checked onchange="toggleDimModalSelectAll(this)"> <strong>全选</strong>
+      </label>
+      <span style="color:var(--text-3);">|</span>
+      <span style="color:var(--text-2);">已选: <span id="dim-modal-selected-count" style="color:var(--accent);font-weight:600;">0</span> / <span id="dim-modal-total-count">0</span></span>
+      <span style="color:var(--text-3);">|</span>
+      <span style="color:var(--text-2);">预估数据量: <span id="dim-modal-volume" style="color:var(--emerald);font-weight:600;">--</span></span>
+    </div>
+    <div style="padding:0.8rem 1.2rem;">
+      <div style="font-size:0.72rem;color:var(--text-3);margin-bottom:0.5rem;">
+        ⓘ 勾选的维度将存入数据银行。取消勾选的维度不会被存储，也无法贡献数据估值。
+      </div>
+      <div id="dim-modal-groups" style="display:flex;flex-direction:column;gap:0.6rem;">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDimensionsModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmDimensionsSelection()">确认选择</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MANUAL UPLOAD MODAL ===== -->
+<div class="modal-overlay" id="modal-manual-upload">
+  <div class="modal-container" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title">📄 手动上传数据</span>
+      <span class="modal-close" onclick="closeModal('manual-upload')">×</span>
+    </div>
+    <div style="padding:1rem 1.2rem;">
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:6px;padding:0.6rem 0.8rem;margin-bottom:1rem;font-size:0.75rem;color:var(--amber);">
+        ⚠ 该鉴权方暂未接入 DataBank 网络。您可手动上传数据文件，系统将自动解析（OCR/NLP）并结构化存储。
+      </div>
+      <div class="form-group">
+        <label class="form-label">数据来源</label>
+        <input type="text" class="form-input" id="upload-source" readonly style="background:var(--bg-root);">
+      </div>
+      <div class="form-group">
+        <label class="form-label">上传文件</label>
+        <div style="border:2px dashed var(--border);border-radius:8px;padding:2rem;text-align:center;cursor:pointer;background:var(--bg-root);" onclick="showToast('info','文件选择器将在正式版中接入')">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">📁</div>
+          <div style="font-size:0.82rem;color:var(--text-2);">点击选择文件或拖拽到此处</div>
+          <div style="font-size:0.7rem;color:var(--text-3);margin-top:0.3rem;">支持：PDF / JPG / PNG / DOCX / XLSX（单文件 ≤ 50MB）</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">解析方式</label>
+        <select class="form-select">
+          <option selected>自动识别（推荐）</option>
+          <option>OCR 文字识别</option>
+          <option>NLP 结构化提取</option>
+          <option>表格解析</option>
+        </select>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-3);padding:0.5rem;background:var(--bg-root);border-radius:4px;margin-top:0.5rem;">
+        ⓘ 上传后数据将进入存款流程，等待银行审核确认。手动上传数据置信度标为"人工"，利率可能低于鉴权方背书数据。
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('manual-upload')">取消</button>
+      <button class="btn btn-primary" onclick="closeModal('manual-upload');showToast('success','文件已上传，正在解析中...预计2分钟内完成')">上传并解析</button>
+    </div>
+  </div>
+</div>
+
+<script src="echarts.min.js"></script>
+<script>
+// ===== NAVIGATION =====
+document.querySelectorAll('.nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var page = this.dataset.page;
+    switchPage(page);
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  var titles = { dashboard:'仪表盘', accounts:'协议账户', joint:'联合账户', deposit:'数据存款', sources:'数据来源', wealth:'数据理财', loan:'数据贷款', endorsers:'鉴权方网络', admin:'管理后台' };
+  document.getElementById('pageTitle').textContent = titles[page]||page;
+  document.getElementById('breadcrumbPage').textContent = titles[page]||page;
+}
+
+// ===== goToOpenAccount: 跳转到数据来源页面 =====
+function goToOpenAccount() {
+  switchPage('sources');
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  var sourcesNav = document.querySelector('[data-page=sources]');
+  if (sourcesNav) sourcesNav.classList.add('active');
+}
+
+// ===== computeWeightedConfidence: 数据量×置信度的加权平均 =====
+function computeWeightedConfidence(sourceKey) {
+  var info = sourceEndorserMap[sourceKey] || familySourceEndorsers[sourceKey];
+  if (!info) return 20;
+  var totalDataSize = dataSizeEstimates[sourceKey] || 1;
+  var connectedCount = 0;
+  info.endorsers.forEach(function(e) { if (e.connected) connectedCount++; });
+  var endorserCount = info.endorsers.length;
+  var weightedSum = 0;
+  var totalWeight = 0;
+  if (connectedCount === 0) {
+    // 每个鉴权方均分总数据量，置信度均为20%
+    var perSize = totalDataSize / endorserCount;
+    info.endorsers.forEach(function(e) {
+      weightedSum += perSize * 20;
+      totalWeight += perSize;
+    });
+  } else {
+    // 已接入鉴权方均分总数据量，未接入鉴权方数据量为0
+    var perSize = totalDataSize / connectedCount;
+    info.endorsers.forEach(function(e) {
+      var confidence = e.connected ? getEndorserConfidence(e.name) : 20;
+      var size = e.connected ? perSize : 0;
+      weightedSum += size * confidence;
+      totalWeight += size;
+    });
+  }
+  return totalWeight > 0 ? weightedSum / totalWeight : 20;
+}
+
+// ===== toggleAccountDetail: 展开/收起鉴权方详情 =====
+function toggleAccountDetail(rowElement, sourceKey) {
+  // Check if detail row already exists right after this row
+  var nextRow = rowElement.nextElementSibling;
+  if (nextRow && nextRow.classList.contains('account-detail-row')) {
+    nextRow.remove();
+    return;
+  }
+  // Remove any existing detail rows
+  var existingDetail = rowElement.parentElement.querySelector('.account-detail-row');
+  if (existingDetail) existingDetail.remove();
+  
+  var info = sourceEndorserMap[sourceKey] || familySourceEndorsers[sourceKey];
+  if (!info) return;
+  
+  var weightedConf = computeWeightedConfidence(sourceKey);
+  var coeff = getConfidenceCoefficient(weightedConf);
+  var connectedCount = 0;
+  info.endorsers.forEach(function(e) { if (e.connected) connectedCount++; });
+  
+  var endorsersHtml = info.endorsers.map(function(e) {
+    var confidence = e.connected ? getEndorserConfidence(e.name) : 20;
+    var badgeBg = e.connected ? 'var(--emerald-dim)' : 'rgba(245,158,11,0.12)';
+    var badgeColor = e.connected ? 'var(--emerald)' : 'var(--amber)';
+    return '<span style="display:inline-block;background:' + badgeBg + ';color:' + badgeColor + ';padding:0.15rem 0.5rem;border-radius:999px;font-size:0.7rem;margin:0.15rem;">' + (e.icon||'') + ' ' + e.name + ' ' + confidence + '%</span>';
+  }).join('');
+  
+  var detailTr = document.createElement('tr');
+  detailTr.className = 'account-detail-row';
+  detailTr.innerHTML = '<td colspan="9" style="padding:0.8rem 1rem;background:var(--bg-root);border-bottom:1px solid var(--border-glow);">' +
+    '<div style="font-size:0.78rem;color:var(--text-2);line-height:1.8;">' +
+    '<div style="margin-bottom:0.5rem;"><strong style="color:var(--text);">数据来源：</strong>' + info.name + '</div>' +
+    '<div style="margin-bottom:0.5rem;"><strong style="color:var(--text);">联合背书鉴权方：</strong></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.5rem;">' + endorsersHtml + '</div>' +
+    '<div style="display:flex;gap:2rem;">' +
+    '<span><strong style="color:var(--text);">综合置信度：</strong><span style="color:' + (weightedConf >= 90 ? 'var(--emerald)' : weightedConf >= 70 ? 'var(--accent2)' : 'var(--amber)') + ';font-weight:600;">' + weightedConf.toFixed(0) + '%</span></span>' +
+    '<span><strong style="color:var(--text);">收益系数：</strong><span style="color:var(--accent);font-weight:600;">×' + coeff.toFixed(2) + '</span></span>' +
+    '<span><strong style="color:var(--text);">已接入：</strong>' + connectedCount + '/' + info.endorsers.length + ' 鉴权方</span>' +
+    '</div></div></td>';
+  
+  rowElement.parentElement.insertBefore(detailTr, rowElement.nextSibling);
+}
+
+// ===== filterAccounts: 筛选协议账户列表 =====
+function filterAccounts(filter) {
+  // 获取协议账户表格中的所有行（跳过 thead 中的行）
+  var table = document.querySelector('#page-accounts .card:first-of-type table');
+  if (!table) return;
+  var rows = table.querySelectorAll('tbody tr');
+  rows.forEach(function(row) {
+    // 跳过详情展开行
+    if (row.classList.contains('account-detail-row')) return;
+    var type = row.getAttribute('data-type') || '';
+    if (filter === 'all') {
+      row.style.display = '';
+    } else if (filter === 'active' || filter === 'dormant') {
+      row.style.display = type.indexOf(filter) !== -1 ? '' : 'none';
+    } else {
+      row.style.display = type.indexOf(filter) !== -1 ? '' : 'none';
+    }
+  });
+  // 同时清除所有展开的详情行
+  var detailRows = table.querySelectorAll('.account-detail-row');
+  detailRows.forEach(function(dr) { dr.remove(); });
+}
+
+// ===== wakeAccount: 唤醒休眠账户 =====
+function wakeAccount(accountId, accountName) {
+  if (!confirm('唤醒账户 ' + accountName + ' 将重新激活数据交易，是否继续？')) return;
+  var row = document.querySelector('[data-type*="dormant"]');
+  if (row) {
+    // 更新 data-type
+    row.setAttribute('data-type', row.getAttribute('data-type').replace('dormant', 'active'));
+    // 更新状态 badge
+    var badge = row.querySelector('.badge-dormant');
+    if (badge) {
+      badge.className = 'badge badge-active';
+      badge.textContent = '活跃';
+    }
+    // 更新唤醒按钮
+    var wakeBtn = row.querySelector('.btn-amber');
+    if (wakeBtn) {
+      wakeBtn.remove();
+    }
+    showToast('success', '账户已唤醒，数据交易已恢复');
+  }
+}
+
+// ===== terminateAccount: 解约协议账户 =====
+function terminateAccount(accountId, accountName) {
+  // 检查是否有存款（selectedSources 中是否有该来源）
+  var hasDeposit = false;
+  var sourceKey = '';
+  if (accountId === '0x7a3b...c91f') sourceKey = 'A1-01';
+  else if (accountId === '0x3f8a...d62b') sourceKey = 'B1-01';
+  else if (accountId === '0x5b1f...e83a') sourceKey = 'F1-01';
+  else if (accountId === '0x1d8c...f72e') sourceKey = 'B1-02';
+  
+  if (sourceKey && typeof selectedSources !== 'undefined' && selectedSources[sourceKey]) {
+    hasDeposit = true;
+  }
+  
+  if (hasDeposit) {
+    showToast('info', '该账户有存款，需先解约存款');
+    return;
+  }
+  
+  // 模拟检查贷款
+  if (accountId === '0x3f8a...d62b') {
+    showToast('info', '该账户有贷款，需提前还款');
+    return;
+  }
+  
+  // 模拟检查理财
+  if (accountId === '0x1d8c...f72e') {
+    showToast('info', '该账户有理财，需赎回');
+    return;
+  }
+  
+  if (!confirm('确定要解约协议账户 ' + accountName + ' 吗？解约后鉴权方背书失效，数据将无法交易。')) return;
+  
+  // 找到对应的行
+  var row = document.querySelector('[data-type] tr') || document.querySelector('[data-type]');
+  // 通过 accountId 查找
+  var allRows = document.querySelectorAll('#page-accounts .card:first-of-type table tbody tr');
+  var targetRow = null;
+  allRows.forEach(function(r) {
+    if (r.classList.contains('account-detail-row')) return;
+    var td = r.querySelector('td.mono');
+    if (td && td.textContent.trim() === accountId) {
+      targetRow = r;
+    }
+  });
+  
+  if (targetRow) {
+    // 获取当前日期
+    var now = new Date();
+    var dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    // 获取收益
+    var earningsTd = targetRow.querySelector('td.mono.up, td.mono:not(.up)');
+    var earnings = '';
+    var allTds = targetRow.querySelectorAll('td');
+    if (allTds.length >= 8) {
+      earnings = allTds[7].textContent.trim();
+    }
+    // 获取类型
+    var accountType = '';
+    if (allTds.length >= 3) {
+      accountType = allTds[2].textContent.trim();
+    }
+    // 获取名称
+    var nameTd = targetRow.querySelector('.strong');
+    var name = nameTd ? nameTd.textContent.trim() : accountName;
+    
+    // 移动到历史账户列表
+    var historyTbody = document.getElementById('history-accounts-tbody');
+    if (historyTbody) {
+      var newRow = document.createElement('tr');
+      newRow.innerHTML = '<td class="mono">' + accountId + '</td><td>' + name + '</td><td>' + accountType + '</td><td class="mono">' + dateStr + '</td><td>用户主动解约</td><td class="mono">' + earnings + '</td><td><button class="btn btn-ghost btn-xs">查看详情</button></td>';
+      historyTbody.insertBefore(newRow, historyTbody.firstChild);
+    }
+    
+    // 移除原行
+    targetRow.remove();
+    
+    showToast('success', '账户 ' + accountName + ' 已解约，已移至历史协议账户');
+  }
+}
+
+// ===== showTripleDetail: 展开三权分立管理详情 =====
+function showTripleDetail(type) {
+  var container = document.getElementById('triple-detail');
+  if (!container) return;
+  
+  var title = '';
+  var html = '';
+  
+  if (type === 'ownership') {
+    title = '所有权令牌列表';
+    html = '<div style="margin-top:1rem;padding:0.8rem 1rem;background:var(--bg-card);border:1px solid rgba(0,212,255,0.15);border-radius:8px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">' +
+      '<strong style="color:var(--accent);">' + title + '</strong>' +
+      '<button class="btn btn-ghost btn-xs" onclick="var d=document.getElementById(\'triple-detail\');d.style.display=\'none\';" style="font-size:1rem;line-height:1;">&times;</button>' +
+      '</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>令牌 ID</th><th>绑定 DID</th><th>创建时间</th><th>数据来源</th><th>可交易</th></tr></thead>' +
+      '<tbody>' +
+      '<tr><td class="mono">0xOT01</td><td class="mono">did:db:0x7a3b...c91f</td><td class="mono">2025-06-15</td><td>个人健康数据</td><td>否</td></tr>' +
+      '<tr><td class="mono">0xOT02</td><td class="mono">did:db:0x3f8a...d62b</td><td class="mono">2025-08-20</td><td>企业设备数据</td><td>否</td></tr>' +
+      '<tr><td class="mono">0xOT03</td><td class="mono">did:db:0x1d8c...f72e</td><td class="mono">2025-11-01</td><td>产线传感器数据</td><td>否</td></tr>' +
+      '</tbody></table></div></div>';
+  } else if (type === 'usage') {
+    title = '使用权许可证列表';
+    html = '<div style="margin-top:1rem;padding:0.8rem 1rem;background:var(--bg-card);border:1px solid rgba(129,140,248,0.15);border-radius:8px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">' +
+      '<strong style="color:var(--accent2);">' + title + '</strong>' +
+      '<button class="btn btn-ghost btn-xs" onclick="var d=document.getElementById(\'triple-detail\');d.style.display=\'none\';" style="font-size:1rem;line-height:1;">&times;</button>' +
+      '</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>许可证 ID</th><th>租用方</th><th>数据来源</th><th>有效期</th><th>剩余数据量</th></tr></thead>' +
+      '<tbody>' +
+      '<tr><td class="mono">0xUL01</td><td>AI 训练中心</td><td>个人健康数据</td><td class="mono">2026-12-31</td><td class="mono">1.2 GB</td></tr>' +
+      '<tr><td class="mono">0xUL02</td><td>数据分析公司</td><td>企业设备数据</td><td class="mono">2026-09-15</td><td class="mono">5.8 GB</td></tr>' +
+      '<tr><td class="mono">0xUL03</td><td>智能制造平台</td><td>产线传感器数据</td><td class="mono">2027-03-01</td><td class="mono">12.4 GB</td></tr>' +
+      '</tbody></table></div></div>';
+  } else if (type === 'revenue') {
+    title = '收益权凭证列表';
+    html = '<div style="margin-top:1rem;padding:0.8rem 1rem;background:var(--bg-card);border:1px solid rgba(52,211,153,0.15);border-radius:8px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">' +
+      '<strong style="color:var(--emerald);">' + title + '</strong>' +
+      '<button class="btn btn-ghost btn-xs" onclick="var d=document.getElementById(\'triple-detail\');d.style.display=\'none\';" style="font-size:1rem;line-height:1;">&times;</button>' +
+      '</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>凭证 ID</th><th>持有者</th><th>来源账户</th><th>面值</th><th>流通状态</th></tr></thead>' +
+      '<tbody>' +
+      '<tr><td class="mono">0xRV01</td><td>用户本人</td><td>个人健康数据</td><td class="mono">45,200</td><td>持有中</td></tr>' +
+      '<tr><td class="mono">0xRV02</td><td>用户本人</td><td>企业设备数据</td><td class="mono">128,900</td><td>持有中</td></tr>' +
+      '<tr><td class="mono">0xRV03</td><td>投资方 A</td><td>产线传感器数据</td><td class="mono">50,000</td><td>已流转</td></tr>' +
+      '</tbody></table></div></div>';
+  }
+  
+  container.innerHTML = html;
+  container.style.display = 'block';
+}
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById('modal-' + id).classList.add('show'); }
+function closeModal(id) { document.getElementById('modal-' + id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+});
+
+// ===== LOGIN / REGISTER =====
+function handleLogin(e) {
+  e.preventDefault();
+  var id = document.getElementById('loginId').value.trim();
+  var pw = document.getElementById('loginPassword').value.trim();
+  if (!id || !pw) { document.getElementById('loginError').textContent = '请输入账号和密码'; return; }
+  if (pw.length < 4) { document.getElementById('loginError').textContent = '密码至少4位'; return; }
+  document.getElementById('loginError').textContent = '';
+
+  // Simulate login/register
+  var user = { id: id, name: id.split('@')[0] || id, role: '数据资产管理', avatar: (id.substring(0,2) || 'AL').toUpperCase() };
+  localStorage.setItem('databank_user', JSON.stringify(user));
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('sett-account').textContent = id;
+  updateUserChip(user);
+  showToast('success', '欢迎回来，' + user.name + '！');
+}
+
+function updateUserChip(user) {
+  var chip = document.querySelector('.user-chip');
+  if (chip) {
+    chip.querySelector('.user-avatar').textContent = user.avatar;
+    chip.querySelector('.user-name').textContent = user.name;
+    chip.querySelector('.user-role').textContent = user.role;
+  }
+}
+
+// Auto-login check
+(function() {
+  var saved = localStorage.getItem('databank_user');
+  if (saved) {
+    try {
+      var user = JSON.parse(saved);
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('sett-account').textContent = user.id;
+      updateUserChip(user);
+    } catch(e) { localStorage.removeItem('databank_user'); }
+  }
+})();
+
+// ===== SETTINGS =====
+function openSettings() {
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.add('hidden');
+}
+
+document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSettings();
+});
+
+document.querySelectorAll('#settingsNav .settings-nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.settings-nav-item').forEach(function(i) { i.classList.remove('active'); });
+    this.classList.add('active');
+    var section = this.dataset.settings;
+    document.querySelectorAll('.settings-section').forEach(function(s) { s.classList.remove('active'); });
+    var target = document.getElementById('sett-' + section);
+    if (target) target.classList.add('active');
+  });
+});
+
+// ===== TOAST =====
+function showToast(type, message) {
+  var container = document.getElementById('toast-container');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  var icons = { success: '✓', info: 'ℹ' };
+  toast.innerHTML = '<span class="toast-icon">' + (icons[type]||'') + '</span>' + message;
+  container.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(40px)';
+    toast.style.transition = 'all 300ms ease';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 3000);
+}
+
+// ===== DEPOSIT STEPS =====
+document.querySelectorAll('.step-item').forEach(function(step) {
+  step.addEventListener('click', function() {
+    var steps = this.parentElement.querySelectorAll('.step-item');
+    var clicked = false;
+    steps.forEach(function(s) {
+      if (s === step) clicked = true;
+      if (clicked) { s.classList.remove('active'); s.classList.remove('done'); }
+      else { s.classList.add('done'); s.classList.remove('active'); }
+    });
+    step.classList.add('active');
+  });
+});
+
+// ===== DEPOSIT FORM DYNAMIC UI =====
+function updateDepositForm() {
+  var type = document.getElementById('deposit-type').value;
+  var authLevel = document.getElementById('auth-level');
+  var termGroup = document.getElementById('deposit-term-group');
+  var incrementGroup = document.getElementById('increment-cycle-group');
+
+  if (type === 'current') {
+    // 活期：仅查询检索
+    authLevel.value = 'query';
+    authLevel.querySelector('option[value="download"]').disabled = true;
+    authLevel.querySelector('option[value="query"]').disabled = false;
+    termGroup.style.display = 'none';
+    incrementGroup.style.display = 'none';
+  } else if (type === 'fixed') {
+    // 定期：下载分析，显示期限
+    authLevel.value = 'download';
+    authLevel.querySelector('option[value="download"]').disabled = false;
+    authLevel.querySelector('option[value="query"]').disabled = true;
+    termGroup.style.display = 'block';
+    incrementGroup.style.display = 'none';
+  } else if (type === 'installment') {
+    // 零存整取：下载分析，显示期限+存入周期
+    authLevel.value = 'download';
+    authLevel.querySelector('option[value="download"]').disabled = false;
+    authLevel.querySelector('option[value="query"]').disabled = true;
+    termGroup.style.display = 'block';
+    incrementGroup.style.display = 'block';
+  }
+  // 检查是否选中运动数据，显示/隐藏运动数据专属面板
+  var sportExtra = document.getElementById('sports-data-extra');
+  if (sportExtra) {
+    var selectedItems = Object.keys(selectedSources);
+    var hasSport = false;
+    selectedItems.forEach(function(k) { if (k.startsWith('D4')) hasSport = true; });
+    sportExtra.style.display = hasSport ? 'block' : 'none';
+  }
+}
+
+function toggleMultiSelect() {
+  var container = document.getElementById('data-source-multi');
+  var dropdown = container.querySelector('.multi-select-dropdown');
+  var isOpen = dropdown.style.display === 'block';
+  dropdown.style.display = isOpen ? 'none' : 'block';
+  if (isOpen) container.classList.remove('open');
+  else container.classList.add('open');
+}
+
+function updateMultiSelectTags() {
+  var container = document.getElementById('data-source-multi');
+  var trigger = container.querySelector('.multi-select-trigger');
+  var placeholder = container.querySelector('.multi-select-placeholder');
+  var checked = container.querySelectorAll('input[type=checkbox]:checked');
+  
+  // Remove existing tags
+  trigger.querySelectorAll('.ms-tag').forEach(function(t) { t.remove(); });
+  
+  if (checked.length === 0) {
+    placeholder.style.display = 'block';
+  } else {
+    placeholder.style.display = 'none';
+    checked.forEach(function(cb) {
+      var tag = document.createElement('span');
+      tag.className = 'ms-tag';
+      var label = cb.parentElement.textContent.trim();
+      if (label.length > 18) label = label.substring(0, 16) + '...';
+      tag.textContent = label;
+      var remove = document.createElement('span');
+      remove.className = 'ms-tag-remove';
+      remove.textContent = '×';
+      remove.onclick = function(e) { e.stopPropagation(); cb.checked = false; updateMultiSelectTags(); updateDepositForm(); };
+      tag.appendChild(remove);
+      trigger.insertBefore(tag, placeholder);
+    });
+  }
+  updateDepositForm();
+  updateDimensionsSummary();
+}
+
+function filterMultiSelect() {
+  var container = document.getElementById('data-source-multi');
+  var searchInput = container.querySelector('.multi-select-search input');
+  var query = searchInput.value.toLowerCase();
+  var options = container.querySelectorAll('.ms-option');
+  options.forEach(function(opt) {
+    if (query === '' || opt.textContent.toLowerCase().includes(query)) {
+      opt.classList.remove('hidden');
+    } else {
+      opt.classList.add('hidden');
+    }
+  });
+}
+
+// 点击外部关闭下拉
+document.addEventListener('click', function(e) {
+  var ms = document.getElementById('data-source-multi');
+  if (ms && !ms.contains(e.target)) {
+    ms.querySelector('.multi-select-dropdown').style.display = 'none';
+    ms.classList.remove('open');
+  }
+});
+
+function handleDepositSubmit() {
+  var selectedAccountKey = document.getElementById('selected-protocol-account').value;
+  if (!selectedAccountKey) {
+    showToast('warning', '请先选择协议账户，或前往「数据来源」页面开通账户');
+    return;
+  }
+  var info = sourceEndorserMap[selectedAccountKey] || familySourceEndorsers[selectedAccountKey];
+  var accountName = info ? info.name.split(' · ')[0] : selectedAccountKey;
+  var hasSport = selectedAccountKey.startsWith('D4');
+  if (hasSport) {
+    showToast('success', '运动数据存款已发起！协议账户「' + accountName + '」数据将标注身体条件标签，开放模型推理匹配。等待多方鉴权方确认。');
+  } else {
+    showToast('success', '存款已发起！协议账户「' + accountName + '」等待多方鉴权方确认');
+  }
+}
+
+// 维度数据映射表
+var dataDimensions = {
+  'A1-01': ['心率', '血氧', '睡眠阶段', '步数', '卡路里', 'HRV', '皮肤温度'],
+  'A1-02': ['身高体重', 'BMI', '血压', '血糖', '血脂', '尿酸', '肝肾功能', '心电图', '影像报告', '诊断建议'],
+  'A1-03': ['门诊日期', '住院记录', '手术类型', '处方药品', '检验指标', '诊断结论'],
+  'A2-01': ['产权证号', '建筑面积', '房屋估值', '地理位置', '交易历史', '抵押状态'],
+  'A2-02': ['品牌型号', '行驶里程', '维保记录', '保险保单', '当前估值', '年检记录'],
+  'A4-01': ['个人所得税', '增值税', '专项附加扣除', '年度汇算', '缴款凭证'],
+  'A4-02': ['养老保险', '医疗保险', '失业保险', '工伤保险', '生育保险', '缴费基数'],
+  'A5-01': ['交易时间', '金额', '支付方式', '商户名称', '交易类别'],
+  'A5-02': ['浏览商品', '收藏夹', '加购记录', '下单记录', '评价内容'],
+  'B1-01': ['传感器读数', 'PLC状态', 'SCADA数据', '温度', '压力', '振动'],
+  'B1-02': ['智能家居状态', '工业传感器', '设备在线率', '能耗数据', '告警日志'],
+  'B2-01': ['注册资本', '股东结构', '法人代表', '经营范围', '变更记录'],
+  'B3-01': ['客户画像', 'LTV值', '客户分级', '流失预警', '复购率'],
+  'B3-02': ['销售合同', '采购合同', '合作协议', '履约状态', '金额'],
+  'B4-01': ['贷款记录', '担保记录', '违约记录', '信用评级', '授信额度'],
+  'C1-01': ['专利号', '技术方案', '权利要求', '说明书', '审查意见', '授权状态'],
+  'C2-01': ['词曲版权', '录音版权', '编曲信息', '表演权', 'ISRC编码'],
+  'C2-02': ['电影/电视剧/纪录片', '导演', '编剧', '上映日期', '版权期限'],
+  'C3-01': ['小说/散文/诗歌/剧本', '字数', '章节', '发表平台'],
+  'C3-04': ['UI/UX/平面设计', '源文件格式', '分辨率', '配色'],
+  'D1-01': ['应用名称', '使用时长', '频次', '时段分布', '功能偏好'],
+  'D1-02': ['网页URL', '浏览时长', '搜索关键词', '点击流', '跳出率'],
+  'D2-01': ['好友列表', '关注列表', '互动记录', '兴趣圈子'],
+  'D3-01': ['经纬度', '时间戳', '海拔', '速度', '方向', '精度'],
+  'D4-01': ['距离', '时长', '配速', '步频', '步幅', '卡路里', '心率', '呼吸', '腿部发力', '脚掌受力', '手臂摆动', '姿态', '环境', '生理响应', '运动效果'],
+  'D4-02': ['泳姿识别', '划水频率', 'SWOLF指数', '转身时间', '壁推力量', '换气频率', '憋气时长'],
+  'D4-03': ['平均功率FTP', '标准化功率NP', '功率区间', '左右腿平衡', '踏频曲线', '变挡时机', '骑行姿态'],
+  'D4-04': ['动作名称', '组数/次数', '重量', '1RM', 'ROM', '关节角度', '肌群激活度EMG', '肌肉疲劳曲线', '训练容量趋势'],
+  'D4-05': ['关节活动范围', '体前屈距离', '劈叉角度', '扭转幅度', '重心偏移', '单腿站立时长'],
+  'D4-06': ['总跑动距离', '冲刺次数', '速度分布', '热区图', '挥拍速度', '投篮弧线', '踢球部位'],
+  'E1-01': ['人口数量', '出生率', '老龄化率', '性别比', '城乡分布'],
+  'E2-01': ['温度', '降水量', '风力风向', '空气质量AQI', '湿度'],
+  'E3-01': ['实验数据', '观测数据', '模拟结果', '样本量', '变量'],
+  'FAM-01': ['户号', '用水量', '缴费记录', '缴费金额', '欠费状态'],
+  'FAM-02': ['户号', '用电量', '缴费记录', '峰谷用电', '缴费金额'],
+  'FAM-03': ['户号', '用气量', '缴费记录', '缴费金额', '欠费状态'],
+  'FAM-04': ['外卖订单', '到店消费', '团购券', '会员卡', '预约服务', '消费金额', '消费频次']
+};
+
+// 用户选中的维度Set（持久化状态，不因来源变化而丢失）
+var selectedDims = {};
+
+// 各数据项估算数据量 (单位: GB)
+var dataSizeEstimates = {
+  'A1-01': 2, 'A1-02': 0.5, 'A1-03': 3, 'A2-01': 1.5, 'A2-02': 0.4,
+  'A4-01': 0.3, 'A4-02': 0.4, 'A5-01': 5, 'A5-02': 3,
+  'B1-01': 15, 'B1-02': 12, 'B2-01': 1, 'B3-01': 8, 'B3-02': 3, 'B4-01': 1.5,
+  'C1-01': 0.8, 'C2-01': 5, 'C2-02': 20, 'C3-01': 0.3, 'C3-04': 2,
+  'D1-01': 8, 'D1-02': 4, 'D2-01': 3, 'D3-01': 2,
+  'D4-01': 10, 'D4-02': 3, 'D4-03': 4, 'D4-04': 4, 'D4-05': 1.5, 'D4-06': 3,
+  'E1-01': 1, 'E2-01': 2, 'E3-01': 4,
+  'FAM-01': 0.5, 'FAM-02': 0.5, 'FAM-03': 0.3, 'FAM-04': 2,
+  'FAM-05': 0.4, 'FAM-06': 1.5, 'FAM-07': 2, 'FAM-08': 1, 'FAM-09': 3, 'FAM-10': 1.5
+};
+
+function updateDimensionsSummary() {
+  var summary = document.getElementById('data-dimensions-summary');
+  if (!summary) return;
+
+  var selectedItems = Object.keys(selectedSources);
+
+  if (selectedItems.length === 0) {
+    summary.style.display = 'none';
+    selectedDims = {};
+    return;
+  }
+
+  // 收集所有可用维度（从当前选中的数据来源）
+  var availableDims = {};
+  var totalSize = 0;
+  selectedItems.forEach(function(key) {
+    var dims = dataDimensions[key] || [];
+    dims.forEach(function(d) {
+      if (!availableDims[d]) {
+        availableDims[d] = { count: 0 };
+      }
+      availableDims[d].count++;
+    });
+    totalSize += (dataSizeEstimates[key] || 1);
+  });
+
+  var availableDimNames = Object.keys(availableDims);
+
+  // 清理selectedDims中不再可用的维度
+  var newSelectedDims = {};
+  availableDimNames.forEach(function(d) {
+    newSelectedDims[d] = selectedDims.hasOwnProperty(d) ? selectedDims[d] : true;
+  });
+  selectedDims = newSelectedDims;
+
+  // 更新摘要行
+  var selectedCount = 0;
+  Object.keys(selectedDims).forEach(function(d) { if (selectedDims[d]) selectedCount++; });
+  var totalCount = availableDimNames.length;
+
+  summary.style.display = 'flex';
+  document.getElementById('dim-summary-count').textContent = '已选: ' + selectedCount + ' / ' + totalCount;
+  document.getElementById('dim-summary-volume').textContent = '预估数据量: ~' + totalSize.toFixed(1) + ' GB';
+
+  // 同时更新存款页面的协议账户下拉
+  updateDepositAccountSelector();
+}
+
+function openDimensionsModal() {
+  var selectedItems = Object.keys(selectedSources);
+  if (selectedItems.length === 0) { showToast('warning', '请先选择数据来源'); return; }
+
+  // 收集所有维度，按数据来源分组
+  var groups = {};
+  selectedItems.forEach(function(key) {
+    var dims = dataDimensions[key] || [];
+    if (dims.length === 0) return;
+    var info = sourceEndorserMap[key] || familySourceEndorsers[key] || {name: key};
+    groups[key] = { label: info.name + ' (' + dims.length + '维)', dims: dims };
+  });
+
+  var groupsContainer = document.getElementById('dim-modal-groups');
+  groupsContainer.innerHTML = '';
+
+  Object.keys(groups).forEach(function(key) {
+    var group = groups[key];
+    var groupDiv = document.createElement('div');
+    groupDiv.style.cssText = 'padding:0.6rem 0.8rem;background:var(--bg-root);border-radius:6px;border:1px solid var(--border);';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'font-size:0.75rem;font-weight:600;color:var(--accent);margin-bottom:0.4rem;';
+    header.textContent = '▸ ' + group.label;
+    groupDiv.appendChild(header);
+
+    var tagsDiv = document.createElement('div');
+    tagsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.35rem;';
+
+    group.dims.forEach(function(dim) {
+      var label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:0.3rem;padding:0.2rem 0.55rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;font-size:0.73rem;';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.setAttribute('data-dim', dim);
+      cb.checked = selectedDims.hasOwnProperty(dim) ? selectedDims[dim] : true;
+      cb.onchange = function() { updateDimModalCounts(); };
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(dim));
+      tagsDiv.appendChild(label);
+    });
+
+    groupDiv.appendChild(tagsDiv);
+    groupsContainer.appendChild(groupDiv);
+  });
+
+  updateDimModalCounts();
+  document.getElementById('modal-dimensions').classList.add('show');
+}
+
+function closeDimensionsModal() {
+  document.getElementById('modal-dimensions').classList.remove('show');
+}
+
+function confirmDimensionsSelection() {
+  var allCbs = document.querySelectorAll('#dim-modal-groups input[type=checkbox]');
+  selectedDims = {};
+  allCbs.forEach(function(cb) { selectedDims[cb.getAttribute('data-dim')] = cb.checked; });
+  closeDimensionsModal();
+  updateDimensionsSummary();
+  var selCount = 0; Object.keys(selectedDims).forEach(function(d) { if (selectedDims[d]) selCount++; });
+  showToast('success', '已确认选择 ' + selCount + ' 个维度');
+}
+
+function toggleDimModalSelectAll(el) {
+  var allCbs = document.querySelectorAll('#dim-modal-groups input[type=checkbox]');
+  allCbs.forEach(function(cb) { cb.checked = el.checked; });
+  updateDimModalCounts();
+}
+
+function updateDimModalCounts() {
+  var allCbs = document.querySelectorAll('#dim-modal-groups input[type=checkbox]');
+  var total = allCbs.length;
+  var selected = 0;
+  allCbs.forEach(function(cb) { if (cb.checked) selected++; });
+  document.getElementById('dim-modal-selected-count').textContent = selected;
+  document.getElementById('dim-modal-total-count').textContent = total;
+  var selectAll = document.getElementById('dim-modal-select-all');
+  if (selectAll) selectAll.checked = (selected === total && total > 0);
+  // 预估数据量
+  var selectedItems = Object.keys(selectedSources);
+  var totalSize = 0;
+  selectedItems.forEach(function(key) { totalSize += (dataSizeEstimates[key] || 1); });
+  var ratio = total > 0 ? selected / total : 0;
+  document.getElementById('dim-modal-volume').textContent = '~' + (totalSize * ratio).toFixed(1) + ' GB';
+}
+
+function toggleSelectAll(el) {
+  var container = document.getElementById('data-source-multi');
+  var checkboxes = container.querySelectorAll('.ms-option input[type=checkbox]');
+  checkboxes.forEach(function(cb) {
+    if (cb.id !== 'ms-select-all') {
+      cb.checked = el.checked;
+    }
+  });
+  updateMultiSelectTags();
+  updateGroupSelectAllStates();
+}
+
+function toggleSelectAllGroup(el) {
+  var group = el.getAttribute('data-group');
+  var container = document.getElementById('data-source-multi');
+  var checkboxes = container.querySelectorAll('.ms-option input[type=checkbox]');
+  var allChecked = el.checked;
+  checkboxes.forEach(function(cb) {
+    if (cb.value && cb.value.startsWith(group)) {
+      cb.checked = allChecked;
+    }
+  });
+  updateMultiSelectTags();
+  updateOverallSelectAllState();
+}
+
+function updateGroupSelectAllStates() {
+  var groups = ['A', 'B', 'C', 'D', 'E'];
+  groups.forEach(function(group) {
+    var groupCb = document.querySelector('input[data-group="' + group + '"]');
+    if (!groupCb) return;
+    var items = document.querySelectorAll('#data-source-multi .ms-option input[value^="' + group + '"]');
+    var allChecked = true;
+    items.forEach(function(cb) { if (!cb.checked) allChecked = false; });
+    groupCb.checked = allChecked && items.length > 0;
+  });
+}
+
+function updateOverallSelectAllState() {
+  var selectAll = document.getElementById('ms-select-all');
+  if (!selectAll) return;
+  var checkboxes = document.querySelectorAll('#data-source-multi .ms-option input[type=checkbox]');
+  var allChecked = true;
+  checkboxes.forEach(function(cb) {
+    if (cb.id !== 'ms-select-all' && !cb.checked && !cb.hasAttribute('data-group')) allChecked = false;
+  });
+  selectAll.checked = allChecked;
+}
+
+// ===== JOINT ACCOUNT MULTI-SERVICE =====
+var jointServices = {
+  barber: {
+    name: '理发店次卡', id: '0x7a3c...d92f', created: '2026-03-01',
+    total: 500, pricePerUse: 50, maxUses: 10,
+    ownerShare: 0.80, providerShare: 0.20, endorserFee: 0.01,
+    providerName: '理发店', desc: '用户预付 ¥500 存入联合账户，理发店作为服务方。每次理发作权益转移，银行鉴权分润。用户可随时退卡按比例返还。',
+    consumed: 5, providerBalance: 0, bankFees: 0
+  },
+  gym: {
+    name: '健身房年卡', id: '0x9f2a...b81e', created: '2026-01-15',
+    total: 5000, pricePerUse: 50, maxUses: 100,
+    ownerShare: 0.80, providerShare: 0.20, endorserFee: 0.01,
+    providerName: '健身房', desc: '用户预付 ¥5,000 年卡费用存入联合账户，健身房作为服务方。每次刷卡消费时权益按比例转移，银行鉴权分润。',
+    consumed: 30, providerBalance: 0, bankFees: 0
+  },
+  elderly: {
+    name: '养老护理服务', id: '0x2e8b...c47a', created: '2026-04-01',
+    total: 20000, pricePerUse: 200, maxUses: 100,
+    ownerShare: 0.85, providerShare: 0.15, endorserFee: 0.005,
+    providerName: '养老机构', desc: '用户预付 ¥20,000 养老护理费存入联合账户，养老机构作为服务方。每次护理服务按次结算，权益按比例转移。',
+    consumed: 12, providerBalance: 0, bankFees: 0
+  },
+  medical: {
+    name: '健康管理服务', id: '0x4d1f...a83c', created: '2026-05-20',
+    total: 10000, pricePerUse: 500, maxUses: 20,
+    ownerShare: 0.70, providerShare: 0.30, endorserFee: 0.005,
+    providerName: '医疗机构', desc: '用户预付 ¥10,000 健康管理费存入联合账户，医疗机构作为服务方。每次诊疗按次结算，权益按比例转移。',
+    consumed: 3, providerBalance: 0, bankFees: 0
+  }
+};
+var currentJoint = 'barber';
+
+function switchJointService(service) {
+  currentJoint = service;
+  var s = jointServices[service];
+
+  // Update UI
+  document.getElementById('joint-title').textContent = s.name + ' · 联合账户';
+  document.getElementById('joint-meta').innerHTML =
+    '协议账户 ID: <code class="mono" style="color:var(--accent);background:var(--accent-dim);padding:0.15rem 0.5rem;border-radius:4px;">' + s.id + '</code> &nbsp;|&nbsp;' +
+    '创建: ' + s.created + ' &nbsp;|&nbsp;' +
+    '消费单价: ¥' + s.pricePerUse + '/次';
+  document.getElementById('joint-desc').textContent = s.desc;
+  document.getElementById('provider-label').textContent = s.providerName;
+  document.getElementById('refund-provider-label').textContent = s.providerName + '应得 (' + (s.providerShare * 100).toFixed(0) + '%)';
+  document.getElementById('refund-owner-pct').textContent = (s.ownerShare * 100).toFixed(0);
+  document.getElementById('max-count').textContent = s.maxUses;
+  document.getElementById('price-per-use').textContent = '¥' + s.pricePerUse;
+  document.getElementById('price-per-use-bulk').textContent = '¥' + (s.pricePerUse * 3);
+
+  var slider = document.getElementById('refund-slider');
+  slider.max = s.maxUses;
+  slider.value = s.consumed;
+
+  recalcJoint();
+  updateRefundCalc();
+}
+
+// Joint tabs
+document.querySelectorAll('#joint-tabs .tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    this.classList.add('active');
+    var service = this.dataset.joint;
+    switchJointService(service);
+  });
+});
+
+// Endorser tabs
+document.querySelectorAll('#endorser-tabs .tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    this.classList.add('active');
+    var tabId = this.dataset.endorser;
+    document.querySelectorAll('[id^=endorser-tab-]').forEach(function(el) { el.style.display = 'none'; });
+    var target = document.getElementById('endorser-tab-' + tabId);
+    if (target) target.style.display = 'block';
+  });
+});
+
+function recalcJoint() {
+  var s = jointServices[currentJoint];
+  var consumed = s.consumed * s.pricePerUse;
+  var remaining = s.total - consumed;
+  var userBalance = Math.round(remaining * s.ownerShare * 100) / 100;
+  var providerBalance = Math.round((remaining * s.providerShare + consumed * (1 - s.endorserFee)) * 100) / 100;
+  s.bankFees = Math.round(consumed * s.endorserFee * 100) / 100;
+
+  // Update UI
+  document.getElementById('joint-balance').textContent = '¥' + formatNum(remaining);
+  document.getElementById('consume-count').textContent = s.consumed;
+  document.getElementById('amt-user').textContent = '¥' + formatNum(userBalance);
+  document.getElementById('amt-provider').textContent = '¥' + formatNum(providerBalance);
+  document.getElementById('amt-bank').textContent = '¥' + formatNum(s.bankFees);
+
+  var totalShares = userBalance + providerBalance + s.bankFees || 1;
+  var pctU = (userBalance / totalShares * 100).toFixed(0);
+  var pctP = (providerBalance / totalShares * 100).toFixed(0);
+  var pctB = (s.bankFees / totalShares * 100).toFixed(1);
+  document.getElementById('pct-user').textContent = pctU + '%';
+  document.getElementById('pct-provider').textContent = pctP + '%';
+  document.getElementById('pct-bank').textContent = pctB + '%';
+  document.getElementById('bar-user').style.width = pctU + '%';
+  document.getElementById('bar-provider').style.width = pctP + '%';
+  document.getElementById('bar-bank').style.width = pctB + '%';
+
+  // Update donut
+  var circumference = 263.89;
+  var offsetU = circumference * (1 - userBalance / totalShares);
+  document.getElementById('donut-user').setAttribute('stroke-dashoffset', offsetU);
+  document.getElementById('donut-provider').setAttribute('stroke-dashoffset', circumference * (1 - (userBalance + providerBalance) / totalShares));
+  document.getElementById('donut-bank').setAttribute('stroke-dashoffset', circumference - 2);
+
+  // Sync slider
+  var slider = document.getElementById('refund-slider');
+  if (slider) { slider.value = s.consumed; updateRefundCalc(); }
+
+  // Disable button when depleted
+  var btn = document.getElementById('btn-single');
+  if (btn) btn.disabled = s.consumed >= s.maxUses;
+}
+
+function simulateConsume(times) {
+  var s = jointServices[currentJoint];
+  if (s.consumed + times > s.maxUses) times = s.maxUses - s.consumed;
+  if (times <= 0) { showToast('info','余额已耗尽，请充值'); return; }
+
+  s.consumed += times;
+  recalcJoint();
+
+  var now = new Date();
+  var time = formatTime(now);
+  var log = document.getElementById('transfer-log');
+  var item1 = document.createElement('div');
+  item1.className = 'transfer-item';
+  var tdesc = times === 1 ? '用户消费 (第' + s.consumed + '次)' : '用户消费 ×' + times + ' (第' + s.consumed + '次)';
+  item1.innerHTML = '<span class="transfer-time">' + time + '</span><span class="transfer-desc">' + tdesc + '</span><span class="transfer-amount in">→ ' + s.providerName + ' +¥' + formatNum(times * s.pricePerUse * (1 - s.endorserFee)) + '</span>';
+  log.insertBefore(item1, log.firstChild);
+
+  var item2 = document.createElement('div');
+  item2.className = 'transfer-item';
+  item2.innerHTML = '<span class="transfer-time">' + time + '</span><span class="transfer-desc">鉴权分润</span><span class="transfer-amount in">→ 银行 +¥' + formatNum(times * s.pricePerUse * s.endorserFee) + '</span>';
+  log.insertBefore(item2, log.firstChild);
+
+  if (s.consumed >= s.maxUses) {
+    showToast('info','全部 ' + s.maxUses + ' 次已消费完毕');
+  } else {
+    showToast('success','成功消费 ' + times + ' 次，权益已转移');
+  }
+}
+
+function resetConsumption() {
+  var s = jointServices[currentJoint];
+  s.consumed = 0;
+  s.bankFees = 0;
+  recalcJoint();
+  document.getElementById('transfer-log').innerHTML = '';
+  showToast('info','已重置消费记录');
+}
+
+function updateRefundCalc() {
+  var s = jointServices[currentJoint];
+  var consumed = parseInt(document.getElementById('refund-slider').value);
+  var consumedAmt = consumed * s.pricePerUse;
+  var remaining = s.total - consumedAmt;
+  var userRefund = remaining * s.ownerShare;
+  var providerRefund = remaining * s.providerShare;
+  var bankTotal = consumed * s.endorserFee;
+  document.getElementById('refund-count-label').textContent = consumed + ' 次 (¥' + formatNum(consumedAmt) + ')';
+  document.getElementById('refund-total').textContent = '¥' + formatNum(remaining);
+  document.getElementById('refund-user').textContent = '¥' + formatNum(userRefund);
+  document.getElementById('refund-provider').textContent = '¥' + formatNum(providerRefund);
+  document.getElementById('refund-bank').textContent = '¥' + formatNum(bankTotal);
+}
+
+function simulateRefund() {
+  var s = jointServices[currentJoint];
+  var consumed = parseInt(document.getElementById('refund-slider').value);
+  var remaining = s.total - consumed * s.pricePerUse;
+  var userRefund = remaining * s.ownerShare;
+  showToast('success','退卡成功！用户收到 ¥' + formatNum(userRefund));
+}
+
+// ===== Joint page loaded =====
+
+function formatNum(n) {
+  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Helper for time
+function formatTime(d) {
+  return [d.getHours(), d.getMinutes(), d.getSeconds()]
+    .map(function(v) { return v < 10 ? '0' + v : '' + v; }).join(':');
+}
+
+// ===== KPI COUNTING ANIMATION =====
+function animateCounters() {
+  document.querySelectorAll('.kpi-value[data-count]').forEach(function(el) {
+    var target = parseInt(el.dataset.count);
+    var prefix = el.dataset.prefix || '';
+    var duration = 1200;
+    var start = performance.now();
+    function tick(now) {
+      var progress = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = Math.floor(target * eased);
+      el.textContent = prefix + current.toLocaleString('zh-CN');
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// ===== CHARTS =====
+function initCharts() {
+  // Revenue Trend
+  var revDom = document.getElementById('chart-revenue');
+  if (revDom) {
+    var revChart = echarts.init(revDom);
+    var days = [], revenue = [];
+    for (var i = 0; i < 30; i++) {
+      days.push('D' + (i + 1));
+      revenue.push(Math.floor(800 + Math.random() * 600 + i * 15));
+    }
+    revChart.setOption({
+      grid: { left: 50, right: 15, top: 10, bottom: 30 },
+      xAxis: { type:'category', data:days, axisLabel:{color:'#546580',fontSize:10,interval:4}, axisLine:{lineStyle:{color:'#192847'}} },
+      yAxis: { type:'value', axisLabel:{color:'#546580',fontSize:10}, splitLine:{lineStyle:{color:'#192847',type:'dashed'}} },
+      series: [{
+        type:'line', data:revenue, smooth:true, symbol:'none',
+        lineStyle:{color:'#00d4ff',width:2.5},
+        areaStyle:{color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(0,212,255,0.18)'},{offset:1,color:'rgba(0,212,255,0)'}])},
+      }],
+      tooltip: { trigger:'axis', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#1e3563', textStyle:{color:'#e8edf5',fontSize:12} }
+    });
+  }
+
+  // Asset Distribution
+  var assetDom = document.getElementById('chart-assets');
+  if (assetDom) {
+    var assetChart = echarts.init(assetDom);
+    assetChart.setOption({
+      tooltip: { trigger:'item', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#1e3563', textStyle:{color:'#e8edf5',fontSize:12} },
+      series: [{
+        type:'pie', radius:['52%','78%'], center:['50%','50%'],
+        itemStyle:{ borderColor:'#0e1629', borderWidth:4 },
+        label:{ color:'#94a3b8', fontSize:11 },
+        data: [
+          { value:40, name:'健康医疗', itemStyle:{color:'#00d4ff'} },
+          { value:25, name:'设备运行', itemStyle:{color:'#818cf8'} },
+          { value:18, name:'消费行为', itemStyle:{color:'#f59e0b'} },
+          { value:12, name:'能源环境', itemStyle:{color:'#34d399'} },
+          { value:5, name:'其他', itemStyle:{color:'#546580'} }
+        ]
+      }]
+    });
+  }
+
+  // Daily Active
+  var dauDom = document.getElementById('chart-dau');
+  if (dauDom) {
+    var dauChart = echarts.init(dauDom);
+    var hours = [], dau = [];
+    for (var i = 0; i < 24; i++) {
+      hours.push(i + ':00');
+      var base = i < 6 ? 2 : i < 12 ? 12 : i < 18 ? 20 : 15;
+      dau.push(Math.floor(base + Math.random() * 8));
+    }
+    dauChart.setOption({
+      grid: { left: 45, right: 15, top: 10, bottom: 30 },
+      xAxis: { type:'category', data:hours, axisLabel:{color:'#546580',fontSize:10,interval:3}, axisLine:{lineStyle:{color:'#192847'}} },
+      yAxis: { type:'value', axisLabel:{color:'#546580',fontSize:10}, splitLine:{lineStyle:{color:'#192847',type:'dashed'}} },
+      series: [{
+        type:'bar', data:dau, barWidth:'60%',
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#818cf8'},{offset:1,color:'rgba(129,140,248,0.15)'}]),
+          borderRadius: [5,5,0,0]
+        }
+      }],
+      tooltip: { trigger:'axis', backgroundColor:'rgba(14,22,41,0.96)', borderColor:'#1e3563', textStyle:{color:'#e8edf5',fontSize:12} }
+    });
+  }
+}
+
+// ===== INITIALIZATION =====
+recalcJoint();
+updateRefundCalc();
+animateCounters();
+setTimeout(initCharts, 300);
+
+// Auto-update block height every 10s
+setInterval(function() {
+  var el = document.querySelector('.live-block');
+  if (el) {
+    var h = parseInt(el.textContent.replace(/,/g,'').replace('#','')) + Math.floor(Math.random() * 3);
+    el.textContent = '#' + h.toLocaleString('zh-CN');
+  }
+}, 10000);
+
+// ===== 数据来源页面 =====
+// 数据来源与鉴权方网络映射
+var sourceEndorserMap = {
+  'A1-01': { name: 'A1 健康医疗 · 可穿戴设备数据', role: 'personal', endorsers: [{name:'Apple Health',connected:true,icon:'⌂'},{name:'Garmin Connect',connected:true,icon:'⌂'},{name:'华为健康',connected:false,icon:'⌂'},{name:'小米运动',connected:false,icon:'⌂'}] },
+  'A1-02': { name: 'A1 健康医疗 · 体检报告', role: 'personal', endorsers: [{name:'美年大健康',connected:true,icon:'⌂'},{name:'爱康国宾',connected:false,icon:'⌂'},{name:'瑞慈体检',connected:false,icon:'⌂'}] },
+  'A1-03': { name: 'A1 健康医疗 · 就医记录', role: 'personal', endorsers: [{name:'北京协和医院',connected:true,icon:'⌂'},{name:'301医院',connected:false,icon:'⌂'},{name:'瑞金医院',connected:true,icon:'⌂'},{name:'社区卫生中心',connected:false,icon:'⌂'},{name:'丁香诊所',connected:false,icon:'⌂'}] },
+  'A2-01': { name: 'A2 金融资产 · 房产信息', role: 'personal', endorsers: [{name:'不动产登记中心',connected:true,icon:'⌂'},{name:'链家',connected:true,icon:'⌂'},{name:'贝壳找房',connected:false,icon:'⌂'}] },
+  'A2-02': { name: 'A2 金融资产 · 车辆信息', role: 'personal', endorsers: [{name:'车管所',connected:true,icon:'⌂'},{name:'交警12123',connected:true,icon:'⌂'},{name:'瓜子二手车',connected:false,icon:'⌂'}] },
+  'A4-01': { name: 'A4 政务个人 · 纳税记录', role: 'personal', endorsers: [{name:'国家税务总局',connected:true,icon:'⌂'},{name:'个人所得税APP',connected:true,icon:'⌂'}] },
+  'A4-02': { name: 'A4 政务个人 · 社保记录', role: 'personal', endorsers: [{name:'社保局',connected:true,icon:'⌂'},{name:'支付宝市民中心',connected:true,icon:'⌂'}] },
+  'A5-01': { name: 'A5 消费与交易 · 日常交易', role: 'personal', endorsers: [{name:'支付宝',connected:true,icon:'⌂'},{name:'微信支付',connected:true,icon:'⌂'},{name:'银联',connected:true,icon:'⌂'}] },
+  'A5-02': { name: 'A5 消费与交易 · 电商购物', role: 'personal', endorsers: [{name:'淘宝',connected:true,icon:'⌂'},{name:'京东',connected:true,icon:'⌂'},{name:'拼多多',connected:false,icon:'⌂'},{name:'抖音电商',connected:false,icon:'⌂'}] },
+  'C1-01': { name: 'C1 专利技术 · 发明专利', role: 'personal', endorsers: [{name:'国家知识产权局',connected:true,icon:'⌂'},{name:'专利代理机构',connected:false,icon:'⌂'}] },
+  'C2-01': { name: 'C2 数字版权 · 音乐作品', role: 'personal', endorsers: [{name:'音著协',connected:true,icon:'⌂'},{name:'中国版权保护中心',connected:true,icon:'⌂'},{name:'网易云音乐',connected:false,icon:'⌂'}] },
+  'C2-02': { name: 'C2 数字版权 · 影视作品', role: 'personal', endorsers: [{name:'中国版权保护中心',connected:true,icon:'⌂'},{name:'国家电影局',connected:false,icon:'⌂'}] },
+  'C3-01': { name: 'C3 创意作品 · 文学作品', role: 'personal', endorsers: [{name:'中国版权保护中心',connected:true,icon:'⌂'},{name:'起点中文网',connected:false,icon:'⌂'},{name:'知乎',connected:false,icon:'⌂'}] },
+  'C3-04': { name: 'C3 创意作品 · 设计作品', role: 'personal', endorsers: [{name:'站酷',connected:false,icon:'⌂'},{name:'Behance',connected:false,icon:'⌂'},{name:'Dribbble',connected:false,icon:'⌂'}] },
+  'D1-01': { name: 'D1 数字行为 · App使用习惯', role: 'personal', endorsers: [{name:'Apple',connected:true,icon:'⌂'},{name:'华为',connected:false,icon:'⌂'},{name:'小米',connected:false,icon:'⌂'},{name:'OPPO',connected:false,icon:'⌂'}] },
+  'D1-02': { name: 'D1 数字行为 · 浏览行为', role: 'personal', endorsers: [{name:'Chrome',connected:false,icon:'⌂'},{name:'百度',connected:false,icon:'⌂'},{name:'搜狗',connected:false,icon:'⌂'}] },
+  'D2-01': { name: 'D2 社交关系 · 社交媒体', role: 'personal', endorsers: [{name:'微信',connected:true,icon:'⌂'},{name:'微博',connected:false,icon:'⌂'},{name:'抖音',connected:false,icon:'⌂'}] },
+  'D3-01': { name: 'D3 位置轨迹 · GPS轨迹', role: 'personal', endorsers: [{name:'高德地图',connected:true,icon:'⌂'},{name:'百度地图',connected:false,icon:'⌂'},{name:'Apple Maps',connected:true,icon:'⌂'}] },
+  'D4-01': { name: 'D4 运动健康 · 跑步数据', role: 'personal', endorsers: [{name:'Garmin Connect',connected:true,icon:'⌂'},{name:'Strava',connected:true,icon:'⌂'},{name:'Keep',connected:true,icon:'⌂'},{name:'Nike Run Club',connected:false,icon:'⌂'}] },
+  'D4-04': { name: 'D4 运动健康 · 健身训练', role: 'personal', endorsers: [{name:'Keep',connected:true,icon:'⌂'},{name:'Tonal',connected:false,icon:'⌂'},{name:'Peloton',connected:false,icon:'⌂'}] },
+  'E1-01': { name: 'E1 公共政务 · 人口统计', role: 'personal', endorsers: [{name:'国家统计局',connected:true,icon:'⌂'}] },
+  'E2-01': { name: 'E2 环境地理 · 气象数据', role: 'personal', endorsers: [{name:'中国气象局',connected:true,icon:'⌂'},{name:'空气质量监测站',connected:true,icon:'⌂'}] },
+  'E3-01': { name: 'E3 科研教育 · 临床试验', role: 'personal', endorsers: [{name:'ClinicalTrials.gov',connected:true,icon:'⌂'},{name:'中国临床试验注册中心',connected:true,icon:'⌂'}] },
+  'B1-01': { name: 'B1 运营设备 · 设备运行数据', role: 'enterprise', endorsers: [{name:'西门子MindSphere',connected:true,icon:'⌂'},{name:'树根互联',connected:false,icon:'⌂'}] },
+  'B1-02': { name: 'B1 运营设备 · IoT设备数据', role: 'enterprise', endorsers: [{name:'小米IoT',connected:true,icon:'⌂'},{name:'华为IoT',connected:false,icon:'⌂'},{name:'阿里IoT',connected:true,icon:'⌂'}] },
+  'B2-01': { name: 'B2 工商税务 · 工商信息', role: 'enterprise', endorsers: [{name:'国家企业信用信息公示系统',connected:true,icon:'⌂'},{name:'天眼查',connected:true,icon:'⌂'},{name:'企查查',connected:false,icon:'⌂'}] },
+  'B3-01': { name: 'B3 业务往来 · 客户关系数据', role: 'enterprise', endorsers: [{name:'Salesforce',connected:false,icon:'⌂'},{name:'纷享销客',connected:false,icon:'⌂'}] },
+  'B3-02': { name: 'B3 业务往来 · 合同往来', role: 'enterprise', endorsers: [{name:'法大大',connected:true,icon:'⌂'},{name:'上上签',connected:false,icon:'⌂'}] },
+  'B4-01': { name: 'B4 金融信用 · 企业征信', role: 'enterprise', endorsers: [{name:'央行征信中心',connected:true,icon:'⌂'},{name:'芝麻企业信用',connected:true,icon:'⌂'}] }
+};
+
+// 家庭消费数据
+var familySourceEndorsers = {
+  'FAM-01': { name: '家庭消费 · 水费', role: 'family', endorsers: [{name:'各地水务公司',connected:false,icon:'⌂'}] },
+  'FAM-02': { name: '家庭消费 · 电费', role: 'family', endorsers: [{name:'国家电网',connected:true,icon:'⌂'},{name:'南方电网',connected:true,icon:'⌂'}] },
+  'FAM-03': { name: '家庭消费 · 燃气费', role: 'family', endorsers: [{name:'各地燃气公司',connected:false,icon:'⌂'}] },
+  'FAM-04': { name: '家庭消费 · 生活服务', role: 'family', endorsers: [{name:'美团',connected:true,icon:'⌂'},{name:'大众点评',connected:true,icon:'⌂'},{name:'58同城',connected:false,icon:'⌂'}] },
+  'FAM-05': { name: '家庭消费 · 物业费', role: 'family', endorsers: [{name:'各地物业管理协会',connected:false,icon:'⌂'}] },
+  'FAM-06': { name: '家庭消费 · 宽带通信', role: 'family', endorsers: [{name:'中国电信',connected:true,icon:'⌂'},{name:'中国移动',connected:true,icon:'⌂'},{name:'中国联通',connected:true,icon:'⌂'}] },
+  'FAM-07': { name: '家庭消费 · 子女教育', role: 'family', endorsers: [{name:'学而思',connected:true,icon:'⌂'},{name:'新东方',connected:true,icon:'⌂'}] },
+  'FAM-08': { name: '家庭消费 · 汽车养护', role: 'family', endorsers: [{name:'途虎养车',connected:true,icon:'⌂'},{name:'4S店联盟',connected:false,icon:'⌂'}] },
+  'FAM-09': { name: '家庭消费 · 旅游出行', role: 'family', endorsers: [{name:'携程',connected:true,icon:'⌂'},{name:'飞猪',connected:true,icon:'⌂'},{name:'12306',connected:true,icon:'⌂'}] },
+  'FAM-10': { name: '家庭消费 · 医疗健康', role: 'family', endorsers: [{name:'平安好医生',connected:true,icon:'⌂'},{name:'丁香园',connected:true,icon:'⌂'}] }
+};
+
+// 已选中的数据来源 key 集合
+var selectedSources = {};
+// 当前角色与筛选
+var currentRole = 'personal';
+var currentRoleFilter = 'personal';
+
+function renderSourcesPage() {
+  var grid = document.getElementById('sources-grid');
+  if (!grid) return;
+
+  var sources = [];
+  // 按筛选角色收集
+  Object.keys(sourceEndorserMap).forEach(function(k) {
+    var src = sourceEndorserMap[k];
+    if (currentRoleFilter === 'all' || src.role === currentRoleFilter || (currentRoleFilter === 'family' && src.role === 'personal')) {
+      sources.push({key: k, data: src});
+    }
+  });
+  if (currentRoleFilter === 'family' || currentRoleFilter === 'all') {
+    Object.keys(familySourceEndorsers).forEach(function(k) {
+      sources.push({key: k, data: familySourceEndorsers[k]});
+    });
+  }
+
+  grid.innerHTML = '';
+  sources.forEach(function(src) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'padding:1rem;cursor:pointer;transition:border-color 0.2s;';
+    card.setAttribute('data-source-key', src.key);
+
+    var isSelected = selectedSources[src.key] === true;
+
+    var connectedCount = 0;
+    src.data.endorsers.forEach(function(e) { if (e.connected) connectedCount++; });
+
+    var endorsersHtml = src.data.endorsers.map(function(e) {
+      var style = e.connected ? 'background:var(--emerald-dim);color:var(--emerald);' : 'background:transparent;border:1px solid var(--border);color:var(--text-3);';
+      var status = e.connected ? '已接入' : '未接入';
+      return '<span style="display:inline-flex;align-items:center;gap:0.2rem;padding:0.2rem 0.5rem;' + style + 'border-radius:999px;font-size:0.68rem;margin:0.15rem;">' + e.icon + ' ' + e.name + ' ' + status + '</span>';
+    }).join('');
+
+    var hasUnconnected = src.data.endorsers.some(function(e) { return !e.connected; });
+    var checkIcon = isSelected ? '☑' : '☐';
+    var checkColor = isSelected ? 'color:var(--accent);' : 'color:var(--text-3);';
+
+    card.innerHTML = '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.5rem;">' +
+      '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+      '<span style="font-size:1rem;' + checkColor + 'cursor:pointer;" onclick="event.stopPropagation();toggleSourceSelection(\'' + src.key + '\')">' + checkIcon + '</span>' +
+      '<div style="font-size:0.82rem;font-weight:600;color:var(--text);">' + src.data.name + '</div>' +
+      '</div>' +
+      '<span style="font-size:0.68rem;color:var(--text-3);">' + connectedCount + '/' + src.data.endorsers.length + ' 已接入</span>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.6rem;padding-left:1.5rem;">' + endorsersHtml + '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;font-size:0.72rem;color:var(--text-3);padding-left:1.5rem;">' +
+      '<span>鉴权方网络</span>' +
+      '<div style="display:flex;gap:0.4rem;">' +
+      (isSelected ? '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openDimensionsForSource(\'' + src.key + '\')" style="font-size:0.68rem;">📊 选择维度</button>' : '') +
+      (hasUnconnected ? '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openManualUpload(\'' + src.key + '\',\'' + src.data.name.replace(/'/g, "\\'") + '\')" style="font-size:0.68rem;">📄 手动上传</button>' : '') +
+      '</div>' +
+      '</div>';
+
+    // 点击卡片切换选中
+    card.onclick = function() { toggleSourceSelection(src.key); };
+    // 选中态高亮
+    if (isSelected) card.style.borderColor = 'var(--accent)';
+
+    grid.appendChild(card);
+  });
+
+  renderAutoAccountsPreview();
+  updateSourcesSelectedCount();
+  updateRoleBadge();
+  // 应用搜索过滤
+  filterSourcesBySearch();
+}
+
+function toggleSourceSelection(key) {
+  if (selectedSources[key]) {
+    delete selectedSources[key];
+  } else {
+    selectedSources[key] = true;
+  }
+  renderSourcesPage();
+  updateDepositSourceSummary();
+}
+
+function switchRole(role, el) {
+  currentRole = role;
+  currentRoleFilter = role;
+  // 清空旧选择
+  selectedSources = {};
+  selectedDims = {};
+  // 清空搜索框
+  var searchInput = document.getElementById('sources-search');
+  if (searchInput) searchInput.value = '';
+  // 更新UI
+  document.querySelectorAll('#page-sources .chip').forEach(function(c) { c.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderSourcesPage();
+  updateDepositSourceSummary();
+  updateDimensionsSummary();
+  showToast('info', '已切换至「' + (role === 'personal' ? '个人' : role === 'family' ? '家庭成员' : '企业法人') + '」角色，数据来源已更新');
+}
+
+function returnToDeposit() {
+  updateDepositSourceSummary();
+  switchPage('deposit');
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  var depositNav = document.querySelector('[data-page=deposit]');
+  if (depositNav) depositNav.classList.add('active');
+}
+
+function confirmSourcesAndReturn() {
+  var count = Object.keys(selectedSources).length;
+  if (count === 0) { showToast('warning', '请至少选择一个数据来源'); return; }
+  updateDepositSourceSummary();
+  updateDimensionsSummary();
+  syncDepositAccountsToPage();
+  showToast('success', '已选择 ' + count + ' 个数据来源，已创建 ' + countAutoAccounts() + ' 个多方协议账户，可前往协议账户页查看');
+  switchPage('accounts');
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  var accountsNav = document.querySelector('[data-page=accounts]');
+  if (accountsNav) accountsNav.classList.add('active');
+}
+
+function updateSourcesSelectedCount() {
+  var count = Object.keys(selectedSources).length;
+  var el = document.getElementById('sources-selected-count');
+  if (el) el.textContent = count;
+  var btn = document.getElementById('btn-go-dimensions');
+  if (btn) {
+    if (count > 0) { btn.disabled = false; btn.style.opacity = '1'; }
+    else { btn.disabled = true; btn.style.opacity = '0.5'; }
+  }
+  // 更新每个角色chip的计数
+  var personalTotal = 0, familyTotal = 0, enterpriseTotal = 0;
+  var personalSel = 0, familySel = 0, enterpriseSel = 0;
+  Object.keys(sourceEndorserMap).forEach(function(k) {
+    var src = sourceEndorserMap[k];
+    if (src.role === 'personal') {
+      personalTotal++;
+      if (selectedSources[k]) personalSel++;
+      familyTotal++; // 家庭视图包含个人数据
+      if (selectedSources[k]) familySel++;
+    } else if (src.role === 'enterprise') {
+      enterpriseTotal++;
+      if (selectedSources[k]) enterpriseSel++;
+    }
+  });
+  Object.keys(familySourceEndorsers).forEach(function(k) {
+    familyTotal++;
+    if (selectedSources[k]) familySel++;
+  });
+  var cp = document.getElementById('chip-personal-count');
+  if (cp) cp.textContent = personalSel + '/' + personalTotal;
+  var cf = document.getElementById('chip-family-count');
+  if (cf) cf.textContent = familySel + '/' + familyTotal;
+  var ce = document.getElementById('chip-enterprise-count');
+  if (ce) ce.textContent = enterpriseSel + '/' + enterpriseTotal;
+}
+
+function filterSourcesBySearch() {
+  var searchInput = document.getElementById('sources-search');
+  if (!searchInput) return;
+  var searchTerm = searchInput.value.toLowerCase().trim();
+  var cards = document.querySelectorAll('#sources-grid .card');
+  cards.forEach(function(card) {
+    var key = card.getAttribute('data-source-key');
+    var name = '';
+    if (sourceEndorserMap[key]) {
+      name = sourceEndorserMap[key].name;
+    } else if (familySourceEndorsers[key]) {
+      name = familySourceEndorsers[key].name;
+    }
+    if (searchTerm === '' || name.toLowerCase().indexOf(searchTerm) !== -1) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function renderAutoAccountsPreview() {
+  var panel = document.getElementById('sources-auto-accounts');
+  var list = document.getElementById('sources-auto-accounts-list');
+  if (!panel || !list) return;
+  
+  var keys = Object.keys(selectedSources);
+  if (keys.length === 0) { panel.style.display = 'none'; return; }
+  
+  panel.style.display = 'block';
+  list.innerHTML = '';
+  
+  keys.forEach(function(key) {
+    var info = sourceEndorserMap[key] || familySourceEndorsers[key];
+    if (!info) return;
+    
+    // 计算综合置信度（数据量×置信度的加权平均）
+    var avgConfidence = computeWeightedConfidence(key);
+    var avgCoeff = getConfidenceCoefficient(avgConfidence);
+    
+    var endorsersHtml = info.endorsers.map(function(e) {
+      var confidence = e.connected ? getEndorserConfidence(e.name) : 20;
+      var badgeBg = e.connected ? 'var(--emerald-dim)' : 'rgba(245,158,11,0.12)';
+      var badgeColor = e.connected ? 'var(--emerald)' : 'var(--amber)';
+      return '<span style="background:' + badgeBg + ';color:' + badgeColor + ';padding:0.15rem 0.5rem;border-radius:999px;font-size:0.68rem;">' + e.icon + ' ' + e.name + ' ' + confidence + '%</span>';
+    }).join('');
+    
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:0.6rem 0.8rem;background:var(--bg-root);border:1px solid var(--border);border-radius:8px;font-size:0.72rem;';
+    item.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">' +
+      '<span style="font-weight:600;color:var(--text);">' + info.name + '</span>' +
+      '<span style="font-weight:600;color:var(--accent);">置信度 ' + avgConfidence.toFixed(0) + '% · 收益 ×' + avgCoeff.toFixed(2) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:0.35rem;">' +
+      endorsersHtml +
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+// 鉴权方 → 置信度映射
+var endorserConfidenceMap = {
+  'Apple Health': 96, 'Garmin Connect': 96, '北京协和医院': 98, '瑞金医院': 97,
+  '国家税务总局': 99, '社保局': 98, '支付宝': 95, '微信支付': 94, '银联': 97,
+  '不动产登记中心': 98, '车管所': 97, '国家知识产权局': 99, '中国版权保护中心': 98,
+  '国家统计局': 99, '中国气象局': 97, '国家电网': 96, '南方电网': 95,
+  '央行征信中心': 99, '淘宝': 90, '京东': 88, '美团': 85, '大众点评': 83,
+  '高德地图': 88, '微信': 92, 'Strava': 90, 'Keep': 78,
+  'ClinicalTrials.gov': 95, '中国临床试验注册中心': 94,
+  '美年大健康': 85, '音著协': 95, '链家': 80,
+  '西门子MindSphere': 90, '阿里IoT': 88, '小米IoT': 82,
+  '国家企业信用信息公示系统': 99, '天眼查': 85, '法大大': 88, '芝麻企业信用': 90,
+  '支付宝市民中心': 92, '交警12123': 96, '个人所得税APP': 98,
+  'Apple': 92, 'Salesforce': 85, '各地水务公司': 50, '各地燃气公司': 50
+};
+
+function getEndorserConfidence(name) {
+  return endorserConfidenceMap[name] || 80;
+}
+
+function getConfidenceCoefficient(confidence) {
+  if (confidence >= 99) return 1.00;
+  if (confidence >= 95) return 0.95;
+  if (confidence >= 90) return 0.90;
+  if (confidence >= 80) return 0.85;
+  if (confidence >= 60) return 0.70;
+  return 0.50;
+}
+
+// 更新存款页面协议账户下拉选择器
+function updateDepositAccountSelector() {
+  var select = document.getElementById('selected-protocol-account');
+  if (!select) return;
+  var infoDiv = document.getElementById('protocol-account-info');
+  var detailDiv = document.getElementById('protocol-account-detail');
+  
+  var keys = Object.keys(selectedSources);
+  
+  // 清空选项，保留默认
+  select.innerHTML = '<option value="">— 请选择协议账户 —</option>';
+  
+  if (keys.length === 0) {
+    infoDiv.style.display = 'none';
+    return;
+  }
+  
+  keys.forEach(function(key) {
+    var info = sourceEndorserMap[key] || familySourceEndorsers[key];
+    if (!info) return;
+    
+    // 计算综合置信度（数据量×置信度的加权平均）
+    var avgConfidence = computeWeightedConfidence(key);
+    var avgCoeff = getConfidenceCoefficient(avgConfidence);
+    
+    var connectedCount = info.endorsers.filter(e => e.connected).length;
+    var optionText = info.name.split(' · ')[0] + ' | ' + connectedCount + '/' + info.endorsers.length + ' 已接入 | 置信度' + avgConfidence.toFixed(0) + '%';
+    var option = document.createElement('option');
+    option.value = key;
+    option.textContent = optionText;
+    select.appendChild(option);
+  });
+  
+  infoDiv.style.display = 'none';
+}
+
+// 选择协议账户变化时更新详情展示
+function onProtocolAccountChange() {
+  var select = document.getElementById('selected-protocol-account');
+  var infoDiv = document.getElementById('protocol-account-info');
+  var detailDiv = document.getElementById('protocol-account-detail');
+  var selectedKey = select.value;
+  
+  if (!selectedKey) {
+    infoDiv.style.display = 'none';
+    return;
+  }
+  
+  var info = sourceEndorserMap[selectedKey] || familySourceEndorsers[selectedKey];
+  if (!info) {
+    infoDiv.style.display = 'none';
+    return;
+  }
+  
+  // 计算综合置信度（数据量×置信度的加权平均）
+  var avgConfidence = computeWeightedConfidence(selectedKey);
+  var avgCoeff = getConfidenceCoefficient(avgConfidence);
+  
+  // 生成鉴权方标签HTML
+  var endorsersHtml = info.endorsers.map(function(e) {
+    var confidence = e.connected ? getEndorserConfidence(e.name) : 20;
+    var badgeBg = e.connected ? 'var(--emerald-dim)' : 'rgba(245,158,11,0.12)';
+    var badgeColor = e.connected ? 'var(--emerald)' : 'var(--amber)';
+    return '<span style="display:inline-block;background:' + badgeBg + ';color:' + badgeColor + ';padding:0.15rem 0.4rem;border-radius:999px;font-size:0.65rem;margin:0.15rem 0.2rem 0.15rem 0;">' + e.icon + ' ' + e.name + ' ' + confidence + '%</span>';
+  }).join('');
+  
+  detailDiv.innerHTML = '<strong>' + info.name + '</strong> · 综合置信度 <strong style="color:var(--accent);">' + avgConfidence.toFixed(0) + '%</strong> · 收益系数 <strong style="color:var(--accent);">×' + avgCoeff.toFixed(2) + '</strong><div style="margin-top:0.3rem;">' + endorsersHtml + '</div>';
+  infoDiv.style.display = 'block';
+}
+
+// 同步协议账户到协议账户页面的主表格
+function syncDepositAccountsToPage() {
+  // 找到协议账户页面的主表格 tbody
+  var accountsPage = document.getElementById('page-accounts');
+  if (!accountsPage) return;
+  var tables = accountsPage.querySelectorAll('table tbody');
+  if (tables.length === 0) return;
+  // 第一个表格是协议账户列表的主表格
+  var mainTbody = tables[0];
+  if (!mainTbody) return;
+  
+  var keys = Object.keys(selectedSources);
+  
+  // 移除之前自动添加的账户行（保留静态示例行）
+  var autoRows = mainTbody.querySelectorAll('.auto-account-row');
+  autoRows.forEach(function(r) { r.remove(); });
+  
+  if (keys.length === 0) return;
+  
+  keys.forEach(function(key) {
+    var info = sourceEndorserMap[key] || familySourceEndorsers[key];
+    if (!info) return;
+    
+    var accountId = '0x' + (Math.random().toString(16).substr(2,4)) + '...' + (Math.random().toString(16).substr(2,4));
+    var totalSize = dataSizeEstimates[key] || 1;
+    var avgConfidence = computeWeightedConfidence(key);
+    var coeff = getConfidenceCoefficient(avgConfidence);
+    var connectedCount = 0;
+    info.endorsers.forEach(function(e) { if (e.connected) connectedCount++; });
+    var hasConnected = connectedCount > 0;
+    var status = hasConnected ? '已签约' : '全待鉴权';
+    var statusCls = hasConnected ? 'badge badge-active' : 'badge';
+    var statusStyle = hasConnected ? '' : 'style="background:rgba(245,158,11,0.12);color:var(--amber);"';
+    
+    var tr = document.createElement('tr');
+    tr.className = 'auto-account-row';
+    tr.innerHTML = '<td class="mono">' + accountId + '</td>' +
+      '<td class="strong">' + info.name.split(' · ')[0] + '</td>' +
+      '<td>' + (info.role === 'personal' ? '个人' : info.role === 'family' ? '家庭' : '企业') + '</td>' +
+      '<td class="mono">' + totalSize.toFixed(1) + ' GB</td>' +
+      '<td><span class="' + statusCls + '" ' + statusStyle + '>' + status + '</span></td>' +
+      '<td class="mono">持有</td>' +
+      '<td class="mono">0 有效</td>' +
+      '<td class="mono">0</td>' +
+      '<td><button class="btn btn-ghost btn-xs" onclick="toggleAccountDetail(this.closest(\'tr\'),\'' + key + '\')">详情</button></td>';
+    mainTbody.appendChild(tr);
+  });
+}
+
+function countAutoAccounts() {
+  // 一个数据来源 = 一个多方协议账户
+  var keys = Object.keys(selectedSources);
+  return keys.length;
+}
+
+function updateRoleBadge() {
+  var badge = document.getElementById('current-role-badge');
+  if (badge) {
+    if (currentRole === 'personal') badge.textContent = '👤 个人';
+    else if (currentRole === 'family') badge.textContent = '👨‍👩‍👧 家庭成员';
+    else if (currentRole === 'enterprise') badge.textContent = '🏢 企业法人';
+  }
+}
+
+function openManualUpload(key, name) {
+  document.getElementById('upload-source').value = name;
+  openModal('manual-upload');
+}
+
+function openDimensionsForSource(key) {
+  var dims = dataDimensions[key] || [];
+  if (dims.length === 0) { showToast('warning', '该数据来源暂无维度定义'); return; }
+
+  var srcInfo = sourceEndorserMap[key] || familySourceEndorsers[key] || {name: key};
+  var groupsContainer = document.getElementById('dim-modal-groups');
+  groupsContainer.innerHTML = '';
+
+  var groupDiv = document.createElement('div');
+  groupDiv.style.cssText = 'padding:0.6rem 0.8rem;background:var(--bg-root);border-radius:6px;border:1px solid var(--border);';
+  var header = document.createElement('div');
+  header.style.cssText = 'font-size:0.75rem;font-weight:600;color:var(--accent);margin-bottom:0.4rem;';
+  header.textContent = '▸ ' + srcInfo.name + ' (' + dims.length + '维)';
+  groupDiv.appendChild(header);
+
+  var tagsDiv = document.createElement('div');
+  tagsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.35rem;';
+  dims.forEach(function(dim) {
+    var label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:0.3rem;padding:0.2rem 0.55rem;background:var(--bg-surface);border-radius:999px;cursor:pointer;font-size:0.73rem;';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.setAttribute('data-dim', dim);
+    cb.checked = selectedDims.hasOwnProperty(dim) ? selectedDims[dim] : true;
+    cb.onchange = function() { updateDimModalCounts(); };
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(dim));
+    tagsDiv.appendChild(label);
+  });
+  groupDiv.appendChild(tagsDiv);
+  groupsContainer.appendChild(groupDiv);
+
+  updateDimModalCounts();
+  document.getElementById('modal-dimensions').classList.add('show');
+}
+
+function goToDimensionsFromSources() {
+  var keys = Object.keys(selectedSources);
+  if (keys.length === 0) { showToast('warning', '请先勾选数据来源'); return; }
+  openDimensionsModal();
+}
+
+function updateDepositSourceSummary() {
+  // 更新协议账户下拉选择器
+  updateDepositAccountSelector();
+}
+
+// 页面切换时自动渲染 + 仪表盘动画
+var origSwitchPage = switchPage;
+switchPage = function(page) {
+  origSwitchPage(page);
+  if (page === 'dashboard') {
+    setTimeout(animateCounters, 100);
+  }
+  if (page === 'sources') {
+    setTimeout(renderSourcesPage, 50);
+  }
+  if (page === 'accounts') {
+    setTimeout(syncDepositAccountsToPage, 50);
+  }
+  if (page === 'deposit') {
+    setTimeout(updateDepositAccountSelector, 50);
+  }
+};
+</script>
+</body>
+</html>
