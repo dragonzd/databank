@@ -353,6 +353,21 @@ services:
 
 <p>DataBank 场景中，数据"可用不可见"是核心需求——鉴权方需要对数据进行校验但不能获取原始数据，模型训练需要多方数据协同但不能泄露隐私。隐私计算技术正是解决这一问题的关键。</p>
 
+<div class="card">
+  <div class="card-header">统一范式：数据沙箱（模型进场、数据不出域）</div>
+  <p>
+    数据使用方授权数据鉴权方将模型放入沙箱，基于数据所有方授权开放的数据完成训练与推理，全程数据不出域；按使用量与时长计费、据以设定沙箱有效期，到期自动回收销毁。沙箱是 DataBank「可用不可见」的统一执行环境，SecretFlow / Kuscia、TEE 等隐私计算组件作为沙箱内的隔离与计算引擎，按数据敏感度分级启用。
+  </p>
+  <table>
+    <thead><tr><th>等级</th><th>隔离技术</th><th>开源选型</th><th>适用数据</th></tr></thead>
+    <tbody>
+      <tr><td>L1</td><td>容器沙箱（断网 + 审计）</td><td>Docker / gVisor / Kata Containers</td><td>低敏感、脱敏数据</td></tr>
+      <tr><td>L2</td><td>TEE 可信执行环境</td><td>SecretFlow（TEE 运行时）/ Intel SGX-TDX</td><td>高敏感、合规要求高</td></tr>
+      <tr><td>L3</td><td>MPC / 联邦学习</td><td>SecretFlow + Kuscia / FATE</td><td>跨机构联合建模、多方统计</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <div class="grid-2">
   <div class="compare-card recommend">
     <h4>SecretFlow（隐语）</h4>

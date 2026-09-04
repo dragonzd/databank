@@ -423,6 +423,43 @@ flowchart LR
   </table>
 </div>
 
+<h3>4.4 数据沙箱与隐私计算设计</h3>
+
+<div class="card">
+  <div class="card-header">核心范式：模型进场、数据不出域</div>
+  <p style="font-size:0.92rem;color:var(--muted);">
+    数据使用方授权数据鉴权方将模型放入沙箱，基于数据所有方授权开放的数据完成训练与推理，全程数据不出域。按使用量与时长计费、据以设定沙箱有效期，到期自动回收。
+  </p>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>等级</th><th>隔离技术</th><th>适用数据</th><th>性能</th><th>安全强度</th></tr></thead>
+    <tbody>
+      <tr><td>L1</td><td>Docker 容器沙箱（断网 + 审计）</td><td>低敏感 / 脱敏数据</td><td>高（接近原生）</td><td>中</td></tr>
+      <tr><td>L2</td><td>TEE（Intel SGX/TDX / 海光 CSV）</td><td>高敏感、合规要求高</td><td>中（有开销）</td><td>高（硬件级）</td></tr>
+      <tr><td>L3</td><td>SecretFlow + MPC / 联邦学习</td><td>跨机构联合建模、多方统计</td><td>低（通信密集）</td><td>高</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header">安全闭环（七道闸）</div>
+  <ul style="margin:0;padding-left:1.2rem;font-size:0.9rem;color:var(--muted);line-height:1.9;">
+    <li><strong>授权网关</strong>——数据使用方授权鉴权方放入模型，鉴权方统一管理与审计数据开放动作</li>
+    <li><strong>模型保护</strong>——模型加密传输，沙箱内解密，用完即销毁</li>
+    <li><strong>网络隔离</strong>——沙箱默认无外网出站，仅开放受控结果出口</li>
+    <li><strong>结果闸门</strong>——训练结果加差分隐私，推理结果脱敏/合规审查后出域</li>
+    <li><strong>精确访问控制</strong>——数据开放粒度到字段级、行级、时间窗口</li>
+    <li><strong>可信计量</strong>——沙箱内计量数据量/算力/时长，作为计费与分账依据</li>
+    <li><strong>可验证销毁</strong>——到期自动销毁、留痕，链上锚定销毁证据</li>
+  </ul>
+</div>
+
+<div class="callout">
+  <strong>演进路径：</strong> MVP 先上 L1 容器沙箱跑通流程；第二阶段引入 L2 TEE 覆盖高敏数据并叠加差分隐私；第三阶段按需接入 L3 MPC/联邦学习支撑跨机构协作。
+</div>
+
 <div class="callout">
   <strong>预估后端工作量：16 人月</strong>（4 名后端工程师 × 4 个月），涵盖 10 个微服务的设计、开发、测试和部署。
 </div>

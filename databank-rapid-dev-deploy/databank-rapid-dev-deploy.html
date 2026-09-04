@@ -277,7 +277,7 @@ footer .foot{font-family:var(--mono);font-size:12px;color:var(--muted);letter-sp
   <h3>4.3 基础能力（全部开源件）</h3>
   <ul class="tick">
     <li><b>区块链：FISCO BCOS</b>（4 节点联盟链）——国产、易部署，账本存证 + 协议/分账合约（Solidity）。</li>
-    <li><b>隐私计算：MVP 用容器沙箱</b>（Docker + 断网隔离 + 全程审计，实现「模型进场、数据不出域」），后续升级 <b>SecretFlow / Kuscia</b> 与 TEE。</li>
+    <li><b>隐私计算：MVP 用数据沙箱</b>（Docker + 断网隔离 + 全程审计，实现「模型进场、数据不出域」）——数据使用方授权数据鉴权方放入模型，基于数据所有方授权开放的数据完成训练/推理，按使用量与时长计费、设定有效期，到期销毁；后续升级 <b>SecretFlow / Kuscia</b> 与 TEE 分级支撑高敏场景。</li>
     <li><b>数据打包校验：Apache Parquet</b>（列式打包）+ <b>Merkle Tree</b>（完整性证明）+ <b>Bouncy Castle</b>（哈希/签名）。</li>
     <li><b>计量计费：Redis 计数器</b> + 结算模块，账单在链上锚定。</li>
   </ul>
