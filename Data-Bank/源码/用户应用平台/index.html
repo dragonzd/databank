@@ -1021,6 +1021,10 @@ td.down { color: var(--red); }
     <span class="page-title" id="pageTitle">仪表盘</span>
     <span class="breadcrumb">/ <span id="breadcrumbPage">仪表盘</span></span>
     <div class="topbar-actions">
+      <span id="api-status-chip" style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:var(--bg-root);border:1px solid var(--border);font-size:0.72rem;color:var(--text-2);cursor:default;" title="DataBank 后端 API 连接状态">
+        <span id="api-status-dot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;flex:none;"></span>
+        <span id="api-status-text">后端连接中</span>
+      </span>
       <div class="live-indicator">
         <div class="live-dot"></div>
         <span class="live-text">区块 <span class="live-block">#847,291</span></span>
@@ -1069,7 +1073,7 @@ td.down { color: var(--red); }
           <div class="table-wrap">
             <table>
               <thead><tr><th>时间</th><th>类型</th><th>金额</th></tr></thead>
-              <tbody>
+              <tbody id="live-recent-txns">
                 <tr><td class="mono">14:32:08</td><td class="strong">数据使用 · 医疗健康</td><td class="mono up">+2,450</td></tr>
                 <tr><td class="mono">13:15:41</td><td class="strong">存款利息 · 活期</td><td class="mono up">+186</td></tr>
                 <tr><td class="mono">11:08:22</td><td class="strong">鉴权分润 · 设备商A</td><td class="mono up">+520</td></tr>
@@ -1125,7 +1129,7 @@ td.down { color: var(--red); }
         <div class="table-wrap">
           <table>
             <thead><tr><th>账户 ID</th><th>名称</th><th>类型</th><th>数据量</th><th>状态</th><th>所有权</th><th>许可证</th><th>累计收益</th><th>操作</th></tr></thead>
-            <tbody>
+            <tbody id="live-accounts">
               <tr data-type="personal active">
                 <td class="mono">0x7a3b...c91f</td><td class="strong">个人健康数据</td><td>个人</td><td class="mono">2.4 GB</td>
                 <td><span class="badge badge-active">活跃</span></td><td class="mono">持有</td><td class="mono">3 有效</td>
@@ -1511,7 +1515,7 @@ td.down { color: var(--red); }
         <div class="table-wrap">
           <table>
             <thead><tr><th>存款 ID</th><th>数据源</th><th>类型</th><th>数据量</th><th>利率</th><th>末次使用</th><th>休眠</th><th>到期</th><th>状态</th></tr></thead>
-            <tbody>
+            <tbody id="live-deposits">
               <tr>
                 <td class="mono">DEP-0042</td><td class="strong">B1 企业设备运行数据</td><td>定期 12月</td><td class="mono">18.7 GB</td><td class="mono">8.5%</td><td class="mono">2026-06-10</td>
                 <td style="color:var(--emerald);">5天前</td><td class="mono">2027-03-15</td><td><span class="badge badge-active">存续</span></td>
@@ -1849,7 +1853,7 @@ td.down { color: var(--red); }
       <div id="endorser-tab-network" style="display:none;">
         <div class="card">
           <div class="card-header"><span class="card-title">鉴权方网络</span><div style="display:flex;gap:0.5rem;"><button class="btn btn-outline btn-sm">筛选</button><button class="btn btn-outline btn-sm" onclick="openModal('endorser-detail')">查看详情</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>鉴权方</th><th>类型</th><th>置信度</th><th>质押</th><th>背书次数</th><th>纠纷率</th><th>累计分润</th><th>评级</th></tr></thead><tbody>
+          <div class="table-wrap"><table><thead><tr><th>鉴权方</th><th>类型</th><th>置信度</th><th>质押</th><th>背书次数</th><th>纠纷率</th><th>累计分润</th><th>评级</th></tr></thead><tbody id="live-endorsers">
             <tr style="background:var(--accent-dim);"><td class="strong">Apple Health (我)</td><td>设备商</td><td><strong style="color:var(--emerald);">94</strong></td><td class="mono">100K</td><td class="mono">2,350</td><td class="mono" style="color:var(--emerald);">0.3%</td><td class="mono up">112.4K</td><td><span class="badge badge-aaa">AAA</span></td></tr>
             <tr><td class="strong">国家电网</td><td>机构</td><td><strong style="color:var(--emerald);">96</strong></td><td class="mono">120K</td><td class="mono">1,840</td><td class="mono" style="color:var(--emerald);">0.1%</td><td class="mono up">86.2K</td><td><span class="badge badge-aaa">AAA</span></td></tr>
             <tr><td class="strong">小米 IoT</td><td>设备商</td><td><strong style="color:var(--accent);">88</strong></td><td class="mono">80K</td><td class="mono">1,620</td><td class="mono" style="color:var(--amber);">0.8%</td><td class="mono up">58.1K</td><td><span class="badge badge-aa">AA</span></td></tr>
@@ -3688,6 +3692,211 @@ switchPage = function(page) {
     setTimeout(updateDepositAccountSelector, 50);
   }
 };
+</script>
+
+<!-- ===== DataBank 后端 API 集成（实时数据 + 优雅降级到演示模式） ===== -->
+<script>
+(function () {
+  var API_BASE = 'http://127.0.0.1:4000/api';
+
+  function apiGet(path) {
+    return new Promise(function (resolve, reject) {
+      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); reject(new Error('timeout')); }, 4000);
+      fetch(API_BASE + path, { signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (data) { clearTimeout(timer); resolve(data); })
+        .catch(function (e) { clearTimeout(timer); reject(e); });
+    });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function fmtVal(n) { return Number(n || 0).toLocaleString('zh-CN'); }
+
+  function fmtTime(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    function p(x) { return (x < 10 ? '0' : '') + x; }
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function setStatus(ok, stats) {
+    var dot = document.getElementById('api-status-dot');
+    var txt = document.getElementById('api-status-text');
+    var chip = document.getElementById('api-status-chip');
+    if (!dot || !txt || !chip) return;
+    if (ok) {
+      dot.style.background = '#34d399';
+      chip.style.borderColor = 'rgba(52,211,153,0.35)';
+      txt.textContent = '后端已连接' + (stats ? ' · ' + stats.accounts + ' 账户' : '');
+    } else {
+      dot.style.background = '#f87171';
+      chip.style.borderColor = 'rgba(248,113,113,0.35)';
+      txt.textContent = '后端离线 · 演示模式';
+    }
+  }
+
+  function accountName(accounts, accountId) {
+    for (var i = 0; i < accounts.length; i++) {
+      if (accounts[i].account_id === accountId) return accounts[i].name || accountId;
+    }
+    return accountId || '—';
+  }
+
+  function revenueOf(settlements, accountId) {
+    var t = 0;
+    for (var i = 0; i < settlements.length; i++) {
+      var s = settlements[i];
+      if (s.account_id === accountId && s.split) t += s.split.owner_share || 0;
+    }
+    return t;
+  }
+
+  function renderAccounts(accounts, settlements) {
+    var el = document.getElementById('live-accounts');
+    if (!el || !accounts.length) return;
+    el.innerHTML = accounts.map(function (a) {
+      var state = (a.lifecycle_state === 'CLOSED')
+        ? '<span class="badge badge-dormant">已解约</span>'
+        : '<span class="badge badge-active">活跃</span>';
+      var vol = (a.data_manifest && a.data_manifest.data_volume) || 0;
+      var lic = (a.usage_licenses || []).length;
+      var rev = fmtVal(revenueOf(settlements, a.account_id));
+      return '<tr data-type="' + esc(a.type || 'personal') + ' ' + (a.lifecycle_state === 'ACTIVE' ? 'active' : 'dormant') + '">'
+        + '<td class="mono">' + esc(a.account_id) + '</td>'
+        + '<td class="strong">' + esc(a.name || '未命名账户') + '</td>'
+        + '<td>' + esc(a.type || '个人') + '</td>'
+        + '<td class="mono">' + fmtVal(vol) + ' GB</td>'
+        + '<td>' + state + '</td>'
+        + '<td class="mono">持有</td>'
+        + '<td class="mono">' + lic + ' 有效</td>'
+        + '<td class="mono up">' + rev + '</td>'
+        + '<td><button class="btn btn-ghost btn-xs">详情</button> <button class="btn btn-ghost btn-xs" style="color:var(--red);">解约</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderDeposits(deposits, accounts) {
+    var el = document.getElementById('live-deposits');
+    if (!el || !deposits.length) return;
+    el.innerHTML = deposits.map(function (d) {
+      var dorm = ((d.annual_rate || 0) <= 0)
+        ? '<span style="color:var(--red);">利率归零</span>'
+        : '<span style="color:var(--text-3);">—</span>';
+      var st = (d.status === 'CLOSED')
+        ? '<span class="badge badge-dormant">已结清</span>'
+        : '<span class="badge badge-active">存续</span>';
+      return '<tr>'
+        + '<td class="mono">' + esc(d.deposit_id) + '</td>'
+        + '<td class="strong">' + esc(accountName(accounts, d.account_id)) + '</td>'
+        + '<td>' + esc(d.data_type || '通用') + '</td>'
+        + '<td class="mono">' + fmtVal(d.data_volume) + ' GB</td>'
+        + '<td class="mono">' + ((d.annual_rate || 0) * 100).toFixed(1) + '%</td>'
+        + '<td class="mono">—</td>'
+        + '<td>' + dorm + '</td>'
+        + '<td class="mono">—</td>'
+        + '<td>' + st + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderRecentTxns(settlements, accounts) {
+    var el = document.getElementById('live-recent-txns');
+    if (!el || !settlements.length) return;
+    el.innerHTML = settlements.slice().reverse().map(function (s) {
+      return '<tr>'
+        + '<td class="mono">' + fmtTime(s.timestamp) + '</td>'
+        + '<td class="strong">数据结算 · ' + esc(accountName(accounts, s.account_id)) + '</td>'
+        + '<td class="mono up">+' + fmtVal(s.token_amount) + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function ratingOf(score) {
+    if (score >= 90) return '<span class="badge badge-aaa">AAA</span>';
+    if (score >= 80) return '<span class="badge badge-aa">AA</span>';
+    if (score >= 70) return '<span class="badge badge-pending">A</span>';
+    return '<span class="badge badge-pending">B</span>';
+  }
+
+  function renderEndorsers(endorsers) {
+    var el = document.getElementById('live-endorsers');
+    if (!el || !endorsers.length) return;
+    el.innerHTML = endorsers.map(function (e) {
+      var pending = e.status === 'APPLIED';
+      var score = pending ? '—' : e.confidence_score;
+      var rating = pending ? '<span class="badge badge-pending">待审核</span>' : ratingOf(e.confidence_score);
+      return '<tr>'
+        + '<td class="strong">' + esc(e.name) + '</td>'
+        + '<td>' + esc(e.entity_type || '机构') + '</td>'
+        + '<td><strong style="color:var(--emerald);">' + esc(score) + '</strong></td>'
+        + '<td class="mono">' + fmtVal(e.staked_tokens) + '</td>'
+        + '<td class="mono">' + fmtVal(e.total_endorsed) + '</td>'
+        + '<td class="mono" style="color:var(--emerald);">' + ((e.dispute_rate || 0) * 100).toFixed(1) + '%</td>'
+        + '<td class="mono up">' + fmtVal(e.revenue_accumulated) + '</td>'
+        + '<td>' + rating + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function syncNavBadges(accounts, endorsers) {
+    var items = document.querySelectorAll('.nav-item');
+    for (var i = 0; i < items.length; i++) {
+      var page = items[i].getAttribute('data-page');
+      var b = items[i].querySelector('.nav-badge');
+      if (!b) continue;
+      if (page === 'accounts') b.textContent = accounts.length;
+      if (page === 'endorsers') b.textContent = endorsers.length;
+    }
+  }
+
+  function syncKpi(label, text) {
+    var cards = document.querySelectorAll('.kpi-card');
+    for (var i = 0; i < cards.length; i++) {
+      var lbl = cards[i].querySelector('.kpi-label');
+      if (lbl && lbl.textContent.trim() === label) {
+        var v = cards[i].querySelector('.kpi-value');
+        if (v) { v.textContent = text; if (v.hasAttribute('data-count')) v.setAttribute('data-count', String(text)); }
+      }
+    }
+  }
+
+  function sync() {
+    Promise.all([
+      apiGet('/meta/stats'),
+      apiGet('/accounts'),
+      apiGet('/deposits'),
+      apiGet('/settlements'),
+      apiGet('/endorsers')
+    ]).then(function (res) {
+      var stats = res[0], accounts = res[1], deposits = res[2], settlements = res[3], endorsers = res[4];
+      setStatus(true, stats);
+      renderAccounts(accounts, settlements);
+      renderDeposits(deposits, accounts);
+      renderRecentTxns(settlements, accounts);
+      renderEndorsers(endorsers);
+      syncNavBadges(accounts, endorsers);
+
+      var active = accounts.filter(function (a) { return a.lifecycle_state === 'ACTIVE'; }).length;
+      var totalToken = 0;
+      for (var i = 0; i < settlements.length; i++) totalToken += settlements[i].token_amount || 0;
+      syncKpi('活跃协议账户', String(active));
+      syncKpi('账户总数', String(accounts.length));
+      syncKpi('活跃账户', String(active));
+      syncKpi('累计 Token 收益', fmtVal(totalToken));
+    }).catch(function () {
+      setStatus(false);
+    });
+  }
+
+  sync();
+  setInterval(sync, 15000);
+})();
 </script>
 </body>
 </html>
