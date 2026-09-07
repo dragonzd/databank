@@ -1,0 +1,17 @@
+{
+  "name": "databank-server",
+  "version": "0.1.0",
+  "description": "数据银行系统 MVP 单体后端（协议账户三权分立 + 数据存款 + Token 结算 + 数据沙箱）",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

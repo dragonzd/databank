@@ -1,0 +1,5 @@
+# 依赖
+node_modules/
+
+# 运行时数据（启动时自动 seed）
+data/
